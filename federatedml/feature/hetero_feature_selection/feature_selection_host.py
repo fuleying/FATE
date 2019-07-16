@@ -42,8 +42,8 @@ class HeteroFeatureSelectionHost(BaseHeteroFeatureSelection):
         self._abnormal_detection(data_instances)
         self._init_cols(data_instances)
         LOGGER.debug("host data count: {}, host header: {}".format(data_instances.count(), self.header))
-        print("filter methods: {}".format(self.filter_method))
-        for method in self.filter_method:
+        LOGGER.debug("filter methods: {}".format(self.filter_methods))
+        for method in self.filter_methods:
             self.filter_one_method(data_instances, method)
             print("After method: {}, left_cols: {}".format(method, self.left_cols))
 
@@ -79,17 +79,15 @@ class HeteroFeatureSelectionHost(BaseHeteroFeatureSelection):
                 self.left_cols))
 
         if method == consts.COEFFICIENT_OF_VARIATION_VALUE_THRES:
-            coe_param = self.model_param.coe_param
-            coe_filter = feature_selection.CoeffOfVarValueFilter(coe_param, self.left_cols, self.static_obj)
+            variance_coe_param = self.model_param.variance_coe_param
+            coe_filter = feature_selection.CoeffOfVarValueFilter(variance_coe_param, self.left_cols, self.static_obj)
             new_left_cols = coe_filter.fit(data_instances)
             self._renew_final_left_cols(new_left_cols)
 
             self.static_obj = coe_filter.statics_obj
-            self.coe_meta = coe_filter.get_meta_obj()
+            self.variance_coe_meta = coe_filter.get_meta_obj()
             self.results.append(coe_filter.get_param_obj())
-            # self._renew_left_col_names()
-            coe_filter.display_feature_result(self.party_name)
-            LOGGER.info(
+            LOGGER.debug(
                 "[Result][FeatureSelection][Host]Finish coeffiecient_of_variation value threshold filter."
                 " Current left cols are: {}".format(
                     self.left_cols))
@@ -104,7 +102,6 @@ class HeteroFeatureSelectionHost(BaseHeteroFeatureSelection):
             self.unique_meta = unique_filter.get_meta_obj()
             self.results.append(unique_filter.get_param_obj())
             # self._renew_left_col_names()
-            unique_filter.display_feature_result(self.party_name)
             LOGGER.info("[Result][FeatureSelection][Host]Finish unique value filter. Current left cols are: {}".format(
                 self.left_cols))
 
@@ -117,7 +114,6 @@ class HeteroFeatureSelectionHost(BaseHeteroFeatureSelection):
             self.outlier_meta = outlier_filter.get_meta_obj()
             self.results.append(outlier_filter.get_param_obj())
             # self._renew_left_col_names()
-            outlier_filter.display_feature_result(self.party_name)
             LOGGER.info("[Result][FeatureSelection][Host]Finish outlier cols filter. Current left cols are: {}".format(
                 self.left_cols))
 

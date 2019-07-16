@@ -35,7 +35,6 @@ class HomoLRBase(BaseLogisticRegression):
 
     def _init_model(self, params):
         super(HomoLRBase, self)._init_model(params)
-        self.optimizer = Optimizer(learning_rate=self.learning_rate, opt_method_name=params.optimizer)
         self.transfer_variable = HomoLRTransferVariable()
-        self.transfer_variable.set_taskid(self.taskid)
-        LOGGER.debug("In homoLR base Task id is : {}".format(self.taskid))
+        # self.transfer_variable.set_taskid(self.taskid)
+        # LOGGER.debug("In homoLR base Task id is : {}".format(self.taskid))

@@ -63,7 +63,7 @@ class BaseHeteroFeatureSelection(ModelBase):
         self.unique_meta = None
         self.iv_value_meta = None
         self.iv_percentile_meta = None
-        self.coe_meta = None
+        self.variance_coe_meta = None
         self.outlier_meta = None
 
         # Use to save each model's result
@@ -72,18 +72,18 @@ class BaseHeteroFeatureSelection(ModelBase):
     def _init_model(self, params):
         self.model_param = params
         self.cols_index = params.select_cols
-        self.filter_method = params.filter_method
+        self.filter_methods = params.filter_methods
         self.local_only = params.local_only
 
     def _get_meta(self):
         cols = [str(i) for i in self.cols]
-        meta_protobuf_obj = feature_selection_meta_pb2.FeatureSelectionMeta(filter_methods=self.filter_method,
+        meta_protobuf_obj = feature_selection_meta_pb2.FeatureSelectionMeta(filter_methods=self.filter_methods,
                                                                             local_only=self.model_param.local_only,
                                                                             cols=cols,
                                                                             unique_meta=self.unique_meta,
                                                                             iv_value_meta=self.iv_value_meta,
                                                                             iv_percentile_meta=self.iv_percentile_meta,
-                                                                            coe_meta=self.coe_meta,
+                                                                            variance_coe_meta=self.variance_coe_meta,
                                                                             outlier_meta=self.outlier_meta)
         return meta_protobuf_obj
 
@@ -186,7 +186,8 @@ class BaseHeteroFeatureSelection(ModelBase):
 
         new_data = data_instances.mapValues(f)
         new_header = self._reset_header()
-        new_data.schema['header'] = new_header
+        # new_data.schema['header'] = new_header
+        new_data = self.set_schema(new_data, new_header)
         return new_data
 
     def _abnormal_detection(self, data_instances):
@@ -211,11 +212,14 @@ class BaseHeteroFeatureSelection(ModelBase):
         """
         As for all columns including those not specified in user params, record which columns left.
         """
+        left_col_list = []
         for col_idx, is_left in new_left_cols.items():
             if not is_left:
                 self.left_cols[col_idx] = False
             elif is_left:
+                left_col_list.append(col_idx)
                 self.left_cols[col_idx] = True
+        self.cols = left_col_list
 
     def _init_cols(self, data_instances):
         header = get_header(data_instances)
@@ -253,4 +257,12 @@ class BaseHeteroFeatureSelection(ModelBase):
                 self.left_cols[col_name] = True
             else:
                 self.left_cols[col_name] = False
+
+    def set_schema(self, data_instance, header=None):
+        if header is None:
+            data_instance.schema["header"] = self.header
+        else:
+            data_instance.schema["header"] = header
+        return data_instance
+
 

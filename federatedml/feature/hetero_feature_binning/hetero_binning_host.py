@@ -71,39 +71,7 @@ class HeteroFeatureBinningHost(BaseHeteroFeatureBinning):
                           idx=0)
 
         LOGGER.info("Sent encrypted_bin_sum to guest")
-        self.set_schema(data_instances)
-        self.data_output = data_instances
-        return data_instances
-
-    def transform(self, data_instances):
-        self._abnormal_detection(data_instances)
-
-        self._parse_cols(data_instances)
-
-        # 1. Synchronize encryption information
-        self.__synchronize_encryption()
-
-        split_points = {}
-
-        for col_name, iv_attr in self.binning_result.items():
-            split_points[col_name] = iv_attr.split_points
-
-        data_bin_table = self.binning_obj.get_data_bin(data_instances, split_points)
-
-        encrypted_label_table_id = self.transfer_variable.generate_transferid(self.transfer_variable.encrypted_label)
-        encrypted_label_table = federation.get(name=self.transfer_variable.encrypted_label.name,
-                                               tag=encrypted_label_table_id,
-                                               idx=0)
-        LOGGER.info("Get encrypted_label_table from guest")
-
-        encrypted_bin_sum = self.__static_encrypted_bin_label(data_bin_table, encrypted_label_table, self.cols_dict)
-        encrypted_bin_sum_id = self.transfer_variable.generate_transferid(self.transfer_variable.encrypted_bin_sum)
-        federation.remote(encrypted_bin_sum,
-                          name=self.transfer_variable.encrypted_bin_sum.name,
-                          tag=encrypted_bin_sum_id,
-                          role=consts.GUEST,
-                          idx=0)
-        LOGGER.info("Sent encrypted_bin_sum to guest")
+        data_instances = self.transform(data_instances)
         self.set_schema(data_instances)
         self.data_output = data_instances
         return data_instances

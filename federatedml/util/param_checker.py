@@ -689,16 +689,6 @@ class FeatureBinningParamChecker(object):
         check_positive_integer(binning_param.bin_num, descr)
         check_defined_type(binning_param.cols, descr, ['list', 'int', 'RepeatedScalarContainer'])
         check_open_unit_interval(binning_param.adjustment_factor, descr)
-        # check_string(binning_param.result_table, descr)
-        # check_string(binning_param.result_namespace, descr)
-        check_defined_type(binning_param.display_result, descr, ['list'])
-        for idx, d_s in enumerate(binning_param.display_result):
-            binning_param.display_result[idx] = check_and_change_lower(d_s,
-                                                                       ['iv', 'woe_array', 'iv_array',
-                                                                        'event_count_array', 'non_event_count_array',
-                                                                        'event_rate_array', 'bin_nums', 'split_points',
-                                                                        'non_event_rate_array', 'is_woe_monotonic'],
-                                                                       descr)
 
 
 class FeatureSelectionParamChecker(object):

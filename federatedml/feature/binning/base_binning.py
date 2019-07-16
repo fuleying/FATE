@@ -72,13 +72,6 @@ class IVAttributes(object):
         save_dict['bin_nums'] = self.bin_nums
         return save_dict
 
-    def display_result(self, display_results):
-        save_dict = self.result_dict()
-        dis_str = ""
-        for d_s in display_results:
-            dis_str += "{} is {};\n".format(d_s, save_dict.get(d_s))
-        return dis_str
-
     def reconstruct(self, iv_obj):
         self.woe_array = list(iv_obj.woe_array)
         self.iv_array = list(iv_obj.iv_array)
@@ -181,7 +174,7 @@ class Binning(object):
             col_index = header.index(col)
             self.cols_dict[col] = col_index
 
-    def transform(self, data_instances, transform_cols_idx=None, transform_type='bin_nums'):
+    def transform(self, data_instances, transform_cols_idx, transform_type):
         self._init_cols(data_instances)
         if transform_type == 'bin_nums':
             data_instances, _, _ = self.convert_feature_to_bin(data_instances, transform_cols_idx, self.split_points)
@@ -228,11 +221,15 @@ class Binning(object):
         data_bin_dict = data_instances.mapValues(f)
         return data_bin_dict
 
-    def convert_feature_to_bin(self, data_instances, transform_cols_idx=None, split_points=None):
+    def convert_feature_to_bin(self, data_instances, transform_cols_idx=-1, split_points=None):
         self._init_cols(data_instances)
         if transform_cols_idx is None:
+            return data_instances, None, None
+
+        if transform_cols_idx == -1:
             transform_cols_idx = self.cols_index
         else:
+            assert isinstance(transform_cols_idx, (list, tuple))
             for col in transform_cols_idx:
                 if col not in self.cols_index:
                     raise RuntimeError("Binning Transform cols: {} should be fit before transform".format(col))

@@ -90,18 +90,11 @@ class HeteroFeatureBinningGuest(BaseHeteroFeatureBinning):
 
         # Support one host only in this version. Multiple host will be supported in the future.
         self.host_results[consts.HOST] = host_iv_attrs
-
-        for cols_name, iv_attr in host_iv_attrs.items():
-            display_result = iv_attr.display_result(self.model_param.display_result)
-            LOGGER.info("[Result][FeatureBinning][Host] feature {} 's result is : {}".format(cols_name, display_result))
-
         self.set_schema(data_instances)
-        self.data_output = data_instances
-        return data_instances
+        self.transform(data_instances)
+        LOGGER.debug("Data schema is {}".format(self.data_output.schema))
+        return self.data_output
 
-    def transform(self, data_instances):
-        self.data_output = data_instances
-        return data_instances
 
     @staticmethod
     def encrypt(x, encryptor):
@@ -149,10 +142,6 @@ class HeteroFeatureBinningGuest(BaseHeteroFeatureBinning):
         self._parse_cols(data_instances)
 
         iv_attrs = self.binning_obj.cal_local_iv(data_instances, label_table=label_table)
-        for col_name, iv_attr in iv_attrs.items():
-            display_result = iv_attr.display_result(self.model_param.display_result)
-            LOGGER.info("[Result][FeatureBinning][Guest] feature {} 's result is : {}".format(col_name, display_result))
-            # LOGGER.info("[Result][FeatureBinning]The feature {} 's iv is {}".format(col_name, iv_attrs[col_name].iv))
         self.binning_result = iv_attrs
         self.set_schema(data_instances)
         return data_instances

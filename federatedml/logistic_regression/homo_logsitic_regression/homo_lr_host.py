@@ -105,7 +105,7 @@ class HomoLRHost(HomoLRBase):
                     metric_meta = MetricMeta(name='train',
                                              metric_type="LOSS",
                                              extra_metas={
-                                                 "unit_name": "number of iteration"
+                                                 "unit_name": "iters"
                                              })
                     metric_name = self.get_metric_name('loss')
 
@@ -290,12 +290,12 @@ class HomoLRHost(HomoLRBase):
                 predict_result = predict_result.join(pred_prob, lambda x, y: (x, y))
             else:
                 predict_result = data_instances.mapValues(lambda x: (x.label, None))
-            predict_result_table = predict_result.join(pred_label, lambda x, y: [x[0], x[1], y])
+            predict_result_table = predict_result.join(pred_label, lambda x, y: [x[0], y, x[1],
+                                                                                 {"0": None, "1": None}])
+
+        self.data_output = predict_result
         LOGGER.debug("Finish predict")
         return predict_result_table
-
-    def evaluate(self, labels, pred_prob, pred_labels, evaluate_param):
-        return {}
 
     def __init_model(self, data_instances):
         model_shape = data_overview.get_features_shape(data_instances)

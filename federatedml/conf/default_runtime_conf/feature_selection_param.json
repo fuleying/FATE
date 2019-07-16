@@ -1,5 +1,4 @@
 {
-    "method": "fit",
     "filter_method": ["unique_value"],
     "select_cols": -1,
     "local_only": false,
@@ -12,7 +11,7 @@
     "iv_percentile_param": {
         "percentile_threshold": 1.0
     },
-    "coe_param": {
+    "variance_coe_param": {
         "value_threshold": 1.0
     },
     "outlier_param": {

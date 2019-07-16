@@ -24,6 +24,7 @@ from federatedml.param.sample_param import SampleParam
 from federatedml.util import consts
 from federatedml.util.transfer_variable.sample_transfer_variable import SampleTransferVariable
 from federatedml.model_base import ModelBase
+import random
 
 
 class RandomSampler(object):
@@ -294,6 +295,8 @@ class StratifiedSampler(object):
                     else:
                         callback_metrics.append(Metric(label_name, 0))
 
+                random.shuffle(sample_ids)
+
                 callback(self.tracker, "stratified", callback_metrics)
 
             sample_dtable = eggroll.parallelize(zip(sample_ids, range(len(sample_ids))),
@@ -328,7 +331,10 @@ class StratifiedSampler(object):
                 return_sample_ids = True
 
                 sample_ids = []
+                callback_metrics = []
                 for i in range(len(idset)):
+                    label_name = self.labels[i]
+                    
                     if idset[i]:
                         sample_num = max(1, int(self.fractions[i][1] * len(idset[i])))
 
@@ -338,6 +344,15 @@ class StratifiedSampler(object):
                                                random_state=self.random_state)
 
                         sample_ids.extend(_sample_ids)
+                        
+                        callback_metrics.append(Metric(label_name, len(_sample_ids)))
+                    else:
+                        callback_metrics.append(Metric(label_name, 0))
+
+                
+                random.shuffle(sample_ids)
+                
+                callback(self.tracker, "stratified", callback_metrics)
 
 
             new_data = []
@@ -526,6 +541,10 @@ def callback(tracker, method, callback_metrics):
                                             metric_type="SAMPLE_TEXT"))
 
     else:
+        print ("name {}, namespace {}, metrics_data {}".format("sample_count", "stratified", callback_metrics))
+        for metric in callback_metrics:
+            print ("metric is {}".format(metric))
+
         tracker.log_metric_data("sample_count",
                                 "stratified",
                                 callback_metrics)

@@ -101,20 +101,23 @@ class ModelBase(object):
                 elif not self.data_output and eval_data_output:
                     self.data_output = eval_data_output
 
+            self.set_predict_data_schema(self.data_output)
+        
         elif eval_data:
-            LOGGER.debug("Before getting in predict, need_run: {}".format(self.need_run))
             self.data_output = self.predict(eval_data)
 
             if self.data_output:
                 self.data_output = self.data_output.mapValues(lambda value: value + ["test"])
 
+            self.set_predict_data_schema(self.data_output)
+        
         else:
-            LOGGER.debug("stage is : {}".format(stage))
-
             if stage == "fit":
                 self.data_output = self.fit(data)
             else:
                 self.data_output = self.transform(data)
+
+        LOGGER.debug("In model base, data_output schema: {}".format(self.data_output.schema))
 
     def run(self, component_parameters=None, args=None):
         need_cv = self._init_runtime_parameters(component_parameters)
@@ -122,9 +125,7 @@ class ModelBase(object):
         if need_cv:
             stage = 'cross_validation'
         elif "model" in args:
-            LOGGER.debug("Before load_model, need_run: {}".format(self.need_run))
             self._load_model(args)
-            LOGGER.debug("After load_model, need_run: {}".format(self.need_run))
             stage = "transform"
         elif "isometric_model" in args:
             self._load_model(args)
@@ -134,7 +135,7 @@ class ModelBase(object):
 
         if args.get("data", None) is None:
             return
-        LOGGER.debug("Before _run_data, need_run: {}".format(self.need_run))
+
         self._run_data(args["data"], stage)
 
     def predict(self, data_inst):
@@ -150,6 +151,8 @@ class ModelBase(object):
         pass
 
     def save_data(self):
+        if self.data_output is not None:
+            LOGGER.debug("data output is {}".format(list(self.data_output.collect())))
         return self.data_output
 
     def export_model(self):
@@ -164,7 +167,8 @@ class ModelBase(object):
 
     def set_taskid(self, taskid):
         self.taskid = taskid
-        LOGGER.debug("Taskid is : {}".format(self.taskid))
+        if self.transfer_variable is not None:
+            self.transfer_variable.set_taskid(self.taskid)
 
     def get_metric_name(self, name_prefix):
         if not self.need_cv:
@@ -174,6 +178,9 @@ class ModelBase(object):
 
     def set_tracker(self, tracker):
         self.tracker = tracker
+
+    def set_predict_data_schema(self, predict_data):
+        predict_data.schema = {"header": ["label", "predict_result", "predict_score", "predict_detail", "type"]}
 
     def callback_meta(self, metric_name, metric_namespace, metric_meta):
         # tracker = Tracking('123', 'abc')

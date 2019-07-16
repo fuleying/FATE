@@ -252,7 +252,7 @@ class HeteroSecureBoostingTreeGuest(BoostingTree):
                 y_predict = self.F.mapValues(lambda val: loss_method.predict(val))
                 loss = loss_method.compute_loss(self.y, y_predict)
 
-        return loss
+        return float(loss)
 
     def get_grad_and_hess(self, tree_idx):
         LOGGER.info("get grad and hess of tree {}".format(tree_idx))
@@ -310,8 +310,8 @@ class HeteroSecureBoostingTreeGuest(BoostingTree):
         self.callback_meta("loss",
                            "train",
                            MetricMeta(name="train",
-                                      metric_type="loss",
-                                      extra_metas={"unit_name": "tree"}))
+                                      metric_type="LOSS",
+                                      extra_metas={"unit_name": "iters"}))
 
         for i in range(self.num_trees):
             # n_tree = []
@@ -343,6 +343,7 @@ class HeteroSecureBoostingTreeGuest(BoostingTree):
             self.history_loss.append(loss)
             LOGGER.info("round {} loss is {}".format(i, loss))
 
+            LOGGER.debug("loss type is {}".format(type(loss)))
             self.callback_metric("loss",
                                  "train",
                                  [Metric(i, loss)])
@@ -354,12 +355,12 @@ class HeteroSecureBoostingTreeGuest(BoostingTree):
                 else:
                     self.sync_stop_flag(False, i)
         
-        LOGGER.debug("history loss is {}".format(min(self.history_loss)[0]))
+        LOGGER.debug("history loss is {}".format(min(self.history_loss)))
         self.callback_meta("loss",
                            "train",
                            MetricMeta(name="train",
-                                      metric_type="loss",
-                                      extra_metas={"Best": min(self.history_loss)[0]}))
+                                      metric_type="LOSS",
+                                      extra_metas={"Best": min(self.history_loss)}))
 
         LOGGER.info("end to train secureboosting guest model")
 
@@ -385,7 +386,11 @@ class HeteroSecureBoostingTreeGuest(BoostingTree):
         self.predict_f_value(data_inst)
         if self.task_type == consts.CLASSIFICATION:
             loss_method = self.loss
-            predicts = self.F.mapValues(lambda f: loss_method.predict(f))
+            if self.num_classes == 2:
+                predicts = self.F.mapValues(lambda f: float(loss_method.predict(f)))
+            else:
+                predicts = self.F.mapValues(lambda f: loss_method.predict(f).tolist())
+
         elif self.task_type == consts.REGRESSION:
             if self.objective_param.objective in ["lse", "lae", "huber", "log_cosh", "fair", "tweedie"]:
                 predicts = self.F
@@ -397,21 +402,14 @@ class HeteroSecureBoostingTreeGuest(BoostingTree):
             classes_ = self.classes_
             if self.num_classes == 2:
                 threshold = self.predict_param.threshold
-                predict_label = predicts.mapValues(
-                    lambda pred: classes_[1] if pred > threshold else classes_[0])
+                LOGGER.debug("predict result is {}".format(list(predicts.collect())))
+                predict_result = data_inst.join(predicts, lambda inst, pred: [inst.label, classes_[1] if pred > threshold else classes_[0], pred, {"0": 1 - pred, "1": pred}])
             else:
                 predict_label = predicts.mapValues(lambda preds: classes_[np.argmax(preds)])
-
-            if self.predict_param.with_proba:
-                predict_result = data_inst.join(predicts, lambda inst, predict_prob: (inst.label, predict_prob))
-            else:
-                predict_result = data_inst.mapValues(lambda inst: (inst.label, None))
-
-            predict_result = predict_result.join(predict_label,
-                                                 lambda label_prob, predict_label: [
-                                                     label_prob[0], label_prob[1], predict_label])
+                predict_result = data_inst.join(predicts, lambda inst, preds: [inst.label, classes_[np.argmax(preds)], np.argmax(preds), dict(map(str, classes_), preds)])
+        
         elif self.task_type == consts.REGRESSION:
-            predict_result = data_inst.join(predicts, lambda inst, pred: [inst.label, pred, None])
+            predict_result = data_inst.join(predicts, lambda inst, pred: [inst.label, float(pred), float(pred), {"label": float(pred)}])
 
         else:
             raise NotImplementedError("task type {} not supported yet".format(self.task_type))

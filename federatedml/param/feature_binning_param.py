@@ -29,22 +29,22 @@ class TransformParam(BaseParam):
     Parameters
     ----------
     transform_cols : list of column index, default: None
-        Specify which columns need to be transform. If column index is None, it will use same columns as cols
-        in binning module.
+        Specify which columns need to be transform. If column index is None, None of columns will be transformed.
+        If it is -1, it will use same columns as cols in binning module.
 
     transform_type: str, 'bin_num', 'woe' or None default: None
         Specify which value these columns going to replace. If it is set as None, nothing will be replaced.
 
     """
 
-    def __init__(self, transform_cols=None, transform_type="bin_num"):
+    def __init__(self, transform_cols=-1, transform_type="bin_num"):
         super(TransformParam, self).__init__()
         self.transform_cols = transform_cols
         self.transform_type = transform_type
 
     def check(self):
         descr = "Transform Param's "
-        if self.transform_cols is not None:
+        if self.transform_cols is not None or self.transform_cols != -1:
             self.check_defined_type(self.transform_cols, descr, ['list'])
         self.check_defined_type(self.transform_type, descr, ['bin_num', None])
 
@@ -55,9 +55,6 @@ class FeatureBinningParam(BaseParam):
 
     Parameters
     ----------
-    process_method : str, 'fit' or 'transform', default: "fit"
-        Specify what process to do.
-
     method : str, 'quantile', default: 'quantile'
         Binning method.
 
@@ -88,25 +85,20 @@ class FeatureBinningParam(BaseParam):
     local_only : bool, default: False
         Whether just provide binning method to guest party. If true, host party will do nothing.
 
-    display_result : list, default: ['iv']
-        Specify what results to show. The available results include:
-        ['iv', 'woe_array', 'iv_array', 'event_count_array', 'non_event_count_array', 'event_rate_array',
-        'non_event_rate_array', 'is_woe_monotonic', 'bin_nums', 'split_points']
-        for each features
+    transform_param: TransformParam
+        Define how to transfer the binned data.
 
     """
 
-    def __init__(self, process_method='fit',
-                 method=consts.QUANTILE, compress_thres=consts.DEFAULT_COMPRESS_THRESHOLD,
+    def __init__(self, method=consts.QUANTILE,
+                 compress_thres=consts.DEFAULT_COMPRESS_THRESHOLD,
                  head_size=consts.DEFAULT_HEAD_SIZE,
                  error=consts.DEFAULT_RELATIVE_ERROR,
                  bin_num=consts.G_BIN_NUM, cols=-1, adjustment_factor=0.5,
                  transform_param=TransformParam(),
                  local_only=False,
-                 need_run=True,
-                 display_result='simple'):
+                 need_run=True):
         super(FeatureBinningParam, self).__init__()
-        self.process_method = process_method
         self.method = method
         self.compress_thres = compress_thres
         self.head_size = head_size
@@ -116,9 +108,6 @@ class FeatureBinningParam(BaseParam):
         self.cols = cols
         self.local_only = local_only
         self.transform_param = copy.deepcopy(transform_param)
-        if display_result == 'simple':
-            display_result = ['iv']
-        self.display_result = display_result
         self.need_run = need_run
 
     def check(self):
@@ -132,11 +121,4 @@ class FeatureBinningParam(BaseParam):
         self.check_positive_integer(self.bin_num, descr)
         self.check_defined_type(self.cols, descr, ['list', 'int', 'RepeatedScalarContainer'])
         self.check_open_unit_interval(self.adjustment_factor, descr)
-        self.check_defined_type(self.display_result, descr, ['list'])
-        for idx, d_s in enumerate(self.display_result):
-            self.display_result[idx] = self.check_and_change_lower(d_s,
-                                                                   ['iv', 'woe_array', 'iv_array',
-                                                                    'event_count_array', 'non_event_count_array',
-                                                                    'event_rate_array', 'bin_nums', 'split_points',
-                                                                    'non_event_rate_array', 'is_woe_monotonic'],
-                                                                   descr)
+

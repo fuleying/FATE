@@ -90,9 +90,16 @@ class BaseHeteroFeatureBinning(ModelBase):
             # self.binning_obj = QuantileBinning(self.bin_param)
             raise ValueError("Binning method: {} is not supported yet".format(self.model_param.method))
 
+    def transform(self, data_instances):
+        transform_cols_idx = self.model_param.transform_param.transform_cols
+        transform_type = self.model_param.transform_param.transform_type
+        data_instances = self.binning_obj.transform(data_instances, transform_cols_idx, transform_type)
+        self.set_schema(data_instances)
+        self.data_output = data_instances
+        return data_instances
+
     def _get_meta(self):
         meta_protobuf_obj = feature_binning_meta_pb2.FeatureBinningMeta(
-            method=self.model_param.method,
             compress_thres=self.model_param.compress_thres,
             head_size=self.model_param.head_size,
             error=self.model_param.error,
@@ -114,7 +121,6 @@ class BaseHeteroFeatureBinning(ModelBase):
         for col_name, iv_attr in binning_result.items():
             iv_result = iv_attr.result_dict()
             iv_object = feature_binning_param_pb2.IVParam(**iv_result)
-
             iv_attrs[col_name] = iv_object
         binning_result_obj = feature_binning_param_pb2.FeatureBinningResult(binning_result=iv_attrs)
 
@@ -156,9 +162,9 @@ class BaseHeteroFeatureBinning(ModelBase):
                 iv_attr.reconstruct(iv_attr_obj)
                 host_result_obj[col_name] = iv_attr
             self.host_results[host_name] = host_result_obj
-        LOGGER.debug("In feature binning load model, self.binning_result: {}, cols: {}, host_results: {}".format(
-            self.binning_result, self.cols, self.host_results
-        ))
+        # LOGGER.debug("In feature binning load model, self.binning_result: {}, cols: {}, host_results: {}".format(
+        #     self.binning_result, self.cols, self.host_results
+        # ))
 
     def export_model(self):
         meta_obj = self._get_meta()
@@ -207,7 +213,7 @@ class BaseHeteroFeatureBinning(ModelBase):
             self.cols_dict[col] = col_index
 
     def set_schema(self, data_instance):
-        data_instance.schema = {"header": self.header}
+        data_instance.schema["header"] = self.header
 
     def _abnormal_detection(self, data_instances):
         """

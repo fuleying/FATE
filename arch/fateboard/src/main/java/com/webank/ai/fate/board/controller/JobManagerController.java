@@ -149,8 +149,13 @@ public class JobManagerController {
 
         PageBean<Map> listPageBean = new PageBean<>(pageNum, pageSize, totalRecord);
 
+        String orderField ="f_start_time";
+        String orderType ="desc";
+
+
         long startIndex = listPageBean.getStartIndex();
-        List<JobWithBLOBs> jobWithBLOBsList = jobManagerService.queryJobByPage(startIndex, pageSize);
+//        List<JobWithBLOBs> jobWithBLOBsList = jobManagerService.queryJobByPage(startIndex, pageSize);
+        List<JobWithBLOBs> jobWithBLOBsList = jobManagerService.queryPagedJobsByCondition(startIndex, pageSize,orderField,orderType,null);
 
         ArrayList<Map> jobList = new ArrayList<>();
 
@@ -195,66 +200,67 @@ public class JobManagerController {
         listPageBean.setList(jobList);
 
         return new ResponseResult<>(ErrorCode.SUCCESS, listPageBean);
+
     }
-    @RequestMapping(value = "/query/all", method = RequestMethod.GET)
-
-    public ResponseResult queryJob(@Param(value = "totalRecord") long totalRecord,
-                                   @Param(value = "pageNum") long pageNum,
-                                   @Param(value = "pageSize") long pageSize,
-                                   @Param(value = "orderField") String orderField,
-                                   @Param(value = "orderType") String orderType,
-                                   @Param(value = "jobId") String jobId) {
-
-
-        PageBean<Map> listPageBean = new PageBean<>(pageNum, pageSize, totalRecord);
-
-        long startIndex = listPageBean.getStartIndex();
-        List<JobWithBLOBs> jobWithBLOBsList = jobManagerService.queryPagedJobsByCondition(startIndex, pageSize,orderField,orderType,jobId);
-
-        ArrayList<Map> jobList = new ArrayList<>();
-
-        Map<JobWithBLOBs, Future> jobDataMap = new LinkedHashMap<>();
-
-        for (JobWithBLOBs jobWithBLOBs : jobWithBLOBsList) {
-
-            ListenableFuture<?>   future =ThreadPoolTaskExecutorUtil.submitListenable(this.asyncServiceExecutor,new Callable<JSONObject>() {
-
-                @Override
-                public JSONObject  call() throws Exception {
-                    String jobId = jobWithBLOBs.getfJobId();
-                    String role = jobWithBLOBs.getfRole();
-                    String partyId = jobWithBLOBs.getfPartyId();
-
-                    Map  params =Maps.newHashMap();
-                    params.put(Dict.JOBID,jobId);
-                    params.put(Dict.ROLE,role);
-                    params.put(Dict.PARTY_ID, new Integer(partyId));
-                    String result = httpClientPool.post(fateUrl +Dict.URL_JOB_DATAVIEW, JSON.toJSONString(params));
-                    JSONObject data = JSON.parseObject(result).getJSONObject(Dict.DATA);
-                    return data;
-                }
-            },new  int[]{500,1000},new int[]{3,3});
-
-            jobDataMap.put(jobWithBLOBs, future);
-        }
-
-        jobDataMap.forEach((k, v) -> {
-            try {
-                HashMap<String, Object> stringObjectHashMap = new HashMap<>();
-                stringObjectHashMap.put(Dict.JOB, k);
-                jobList.add(stringObjectHashMap);
-                stringObjectHashMap.put(Dict.DATASET, v.get());
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-            }
-
-        });
-        listPageBean.setList(jobList);
-
-        return new ResponseResult<>(ErrorCode.SUCCESS, listPageBean);
-    }
+//    @RequestMapping(value = "/query/all", method = RequestMethod.GET)
+//
+//    public ResponseResult queryJob(@Param(value = "totalRecord") long totalRecord,
+//                                   @Param(value = "pageNum") long pageNum,
+//                                   @Param(value = "pageSize") long pageSize,
+//                                   @Param(value = "orderField") String orderField,
+//                                   @Param(value = "orderType") String orderType,
+//                                   @Param(value = "jobId") String jobId) {
+//
+//
+//        PageBean<Map> listPageBean = new PageBean<>(pageNum, pageSize, totalRecord);
+//
+//        long startIndex = listPageBean.getStartIndex();
+//        List<JobWithBLOBs> jobWithBLOBsList = jobManagerService.queryPagedJobsByCondition(startIndex, pageSize,orderField,orderType,jobId);
+//
+//        ArrayList<Map> jobList = new ArrayList<>();
+//
+//        Map<JobWithBLOBs, Future> jobDataMap = new LinkedHashMap<>();
+//
+//        for (JobWithBLOBs jobWithBLOBs : jobWithBLOBsList) {
+//
+//            ListenableFuture<?>   future =ThreadPoolTaskExecutorUtil.submitListenable(this.asyncServiceExecutor,new Callable<JSONObject>() {
+//
+//                @Override
+//                public JSONObject  call() throws Exception {
+//                    String jobId = jobWithBLOBs.getfJobId();
+//                    String role = jobWithBLOBs.getfRole();
+//                    String partyId = jobWithBLOBs.getfPartyId();
+//
+//                    Map  params =Maps.newHashMap();
+//                    params.put(Dict.JOBID,jobId);
+//                    params.put(Dict.ROLE,role);
+//                    params.put(Dict.PARTY_ID, new Integer(partyId));
+//                    String result = httpClientPool.post(fateUrl +Dict.URL_JOB_DATAVIEW, JSON.toJSONString(params));
+//                    JSONObject data = JSON.parseObject(result).getJSONObject(Dict.DATA);
+//                    return data;
+//                }
+//            },new  int[]{500,1000},new int[]{3,3});
+//
+//            jobDataMap.put(jobWithBLOBs, future);
+//        }
+//
+//        jobDataMap.forEach((k, v) -> {
+//            try {
+//                HashMap<String, Object> stringObjectHashMap = new HashMap<>();
+//                stringObjectHashMap.put(Dict.JOB, k);
+//                jobList.add(stringObjectHashMap);
+//                stringObjectHashMap.put(Dict.DATASET, v.get());
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            } catch (ExecutionException e) {
+//                e.printStackTrace();
+//            }
+//
+//        });
+//        listPageBean.setList(jobList);
+//
+//        return new ResponseResult<>(ErrorCode.SUCCESS, listPageBean);
+//    }
 
 //    /**
 //     *

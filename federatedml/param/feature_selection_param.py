@@ -82,7 +82,7 @@ class IVPercentileSelectionParam(BaseParam):
         return True
 
 
-class CoeffOfVarSelectionParam(BaseParam):
+class VarianceOfCoeSelectionParam(BaseParam):
     """
     Use coefficient of variation to select features. When judging, the absolute value will be used.
 
@@ -134,21 +134,12 @@ class FeatureSelectionParam(BaseParam):
 
     Parameters
     ----------
-    method : str, 'fit', 'transform' or 'fit_transform', default: 'fit'
-        Decide what process to do.
-        fit_transform: fit select models and transfer data instance
-
-        transform: use fit models to transform data
-
-        fit:  fit the model only without transforming the data.
-
     select_cols: list or int, default: -1
         Specify which columns need to calculated. -1 represent for all columns.
 
-    filter_method: list, ["unique_value", "iv_value_thres", "iv_percentile",
+    filter_methods: list, ["unique_value", "iv_value_thres", "iv_percentile",
                 "coefficient_of_variation_value_thres", "outlier_cols"],
-                 default: ["unique_value", "iv_value_thres",
-                "coefficient_of_variation_value_thres", "outlier_cols"]
+                 default: ["unique_value"]
 
         Specify the filter methods used in feature selection. The orders of filter used is depended on this list.
         Please be notified that, if a percentile method is used after some certain filter method,
@@ -170,48 +161,44 @@ class FeatureSelectionParam(BaseParam):
 
         outlier_cols: Filter columns whose certain percentile value is larger than a threshold.
 
-        Note: iv_value_thres and iv_percentile should not exist at the same times
-
     """
 
-    def __init__(self, method='fit', select_cols=-1, filter_method=None, local_only=False,
+    def __init__(self, select_cols=-1, filter_methods=None, local_only=False,
                  unique_param=UniqueValueParam(),
                  iv_value_param=IVValueSelectionParam(),
                  iv_percentile_param=IVPercentileSelectionParam(),
-                 coe_param=CoeffOfVarSelectionParam(),
+                 variance_coe_param=VarianceOfCoeSelectionParam(),
                  outlier_param=OutlierColsSelectionParam(),
                  need_run=True
                  ):
         super(FeatureSelectionParam, self).__init__()
-        self.method = method
         self.select_cols = select_cols
-        if filter_method is None:
-            self.filter_method = [consts.UNIQUE_VALUE]
+        if filter_methods is None:
+            self.filter_methods = [consts.UNIQUE_VALUE]
         else:
-            self.filter_method = filter_method
+            self.filter_methods = filter_methods
 
         self.local_only = local_only
         self.unique_param = copy.deepcopy(unique_param)
         self.iv_value_param = copy.deepcopy(iv_value_param)
         self.iv_percentile_param = copy.deepcopy(iv_percentile_param)
-        self.coe_param = copy.deepcopy(coe_param)
+        self.variance_coe_param = copy.deepcopy(variance_coe_param)
         self.outlier_param = copy.deepcopy(outlier_param)
         self.need_run = need_run
 
     def check(self):
         descr = "hetero feature selection param's"
-        self.method = self.check_and_change_lower(self.method,
-                                                      ['fit', 'fit_transform', 'transform'], descr)
-        self.check_defined_type(self.filter_method, descr, ['list'])
 
-        for idx, method in enumerate(self.filter_method):
+        self.check_defined_type(self.filter_methods, descr, ['list'])
+
+        for idx, method in enumerate(self.filter_methods):
             method = method.lower()
             self.check_valid_value(method, descr, ["unique_value", "iv_value_thres", "iv_percentile",
                                               "coefficient_of_variation_value_thres",
                                               "outlier_cols"])
-            self.filter_method[idx] = method
-        if "iv_value_thres" in self.filter_method and "iv_percentile" in self.filter_method:
-            raise ValueError("Two iv methods should not exist at the same time.")
+            self.filter_methods[idx] = method
+        # if "iv_value_thres" in self.filter_method and "iv_percentile" in self.filter_method:
+        #     raise ValueError("Two iv methods should not exist at the same time.")
 
         self.check_defined_type(self.select_cols, descr, ['list', 'int'])
 
@@ -219,6 +206,6 @@ class FeatureSelectionParam(BaseParam):
         self.unique_param.check()
         self.iv_value_param.check()
         self.iv_percentile_param.check()
-        self.coe_param.check()
+        self.variance_coe_param.check()
         self.outlier_param.check()
 

@@ -26,52 +26,22 @@ import os
 import sys
 from arch.api.utils import file_utils
 
-header = ["#!/usr/bin/env python\n# -*- coding: utf-8 -*-\n",
-          "################################################################################\n",
-          "#\n# Copyright (c) 2018, WeBank Inc. All Rights Reserved\n#\n",
-          "################################################################################\n",
-          "# =============================================================================\n",
-          "# TransferVariable Class\n# =============================================================================\n"]
+BASE_DIR = file_utils.get_project_base_directory()
+TRANSFER_VARIABLE_TEMPLATE = os.path.join(BASE_DIR, "federatedml", 
+                                         "util", "transfer_variable", 
+                                         "transfer_variable_template.py")
 
-base_class = 'class Variable(object):\n    def __init__(self, name, auth):\n        ' + \
-             'self.name = name\n        self.auth = auth\n\nclass BaseTransferVariable(object):\n    ' + \
-             'def __init__(self, flowid=0):\n        self.flowid = flowid\n        ' + \
-             'self.define_transfer_variable()\n\n    def set_flowid(self, flowid):\n        ' + \
-             'self.flowid = flowid\n\n    def generate_transferid(self, transfer_var, *suffix):\n        ' + \
-             'if transfer_var.name.split(".", -1)[-1] not in self.__dict__:\n            ' + \
-             'raise ValueError("transfer variable not in class, please check if!!!")\n\n        ' + \
-             'transferid = transfer_var.name + "." + str(self.flowid)\n        if suffix:\n            ' + \
-             'transferid += "." + ".".join(map(str, suffix))\n        return transferid\n\n' + \
-             '    def define_transfer_variable(self):\n        pass\n'
-
-import_var = "from federatedml.util.transfer_variable.base_transfer_variable import BaseTransferVariable, Variable"
 
 class TransferVariableGenerator(object):
     def __init__(self):
         pass
 
-    def write_base_class(self, writer):
-        writer.write(base_class)
-
-    def generate_base_class(self, out_path):
-        fout = open(out_path, "w")
-        for head in header:
-            fout.write(head.strip() + "\n")
-
-        fout.write("\n")
-        fout.write("\n")
-
-        self.write_base_class(fout)
-        fout.close()
-
-    def write_out_class(self, writer, class_name, transfer_var_dict, with_header = True):
+    def write_out_class(self, writer, class_name, transfer_var_dict, with_header=True):
         if with_header:
-            global import_var
-            writer.write("#!/usr/bin/env python" + "\n")
-            writer.write("# -*- coding: utf-8 -*- " + "\n")
-            writer.write(import_var + "\n")
-
-        writer.write("\n\n")
+            global TRANSFER_VARIABLE_TEMPLATE
+            
+            with open(TRANSFER_VARIABLE_TEMPLATE, "r") as fin:
+                writer.write(fin.read())
 
         writer.write("class " + class_name + "(BaseTransferVariable):" + "\n")
 
@@ -92,17 +62,14 @@ class TransferVariableGenerator(object):
         writer.flush()
 
     def generate_all(self):
-        base_dir = file_utils.get_project_base_directory()
-        conf_dir = os.path.join(base_dir, "federatedml/transfer_variable_conf")
+        global BASE_DIR
+        conf_dir = os.path.join(BASE_DIR, "federatedml", "transfer_variable_conf")
         merge_conf_path = os.path.join(conf_dir, "transfer_conf.json")
-        trans_var_dir = os.path.join(base_dir, "federatedml/util/transfer_variable")
+        trans_var_dir = os.path.join(BASE_DIR, "federatedml", "util", "transfer_variable")
        
         merge_dict = {}
         with open(merge_conf_path, "w") as fin:
             pass
-
-        base_class_path = os.path.join(trans_var_dir, "base_transfer_variable.py")
-        self.generate_base_class(base_class_path)
 
         for conf in os.listdir(conf_dir):
             if not conf.endswith(".json"):
@@ -178,7 +145,5 @@ if __name__ == "__main__":
     transfer_var_gen = TransferVariableGenerator()
     if conf_path is None and out_path is None:
         transfer_var_gen.generate_all()
-    elif conf_path is None:
-        transfer_var_gen.generate_base_class(out_path)
     else:
         transfer_var_gen.generate_transfer_var_class(conf_path, out_path)
