@@ -169,6 +169,7 @@ class IntersectGuest(ModelBase):
         self.model_param = IntersectParam()
         self.intersect_num = -1
         self.intersect_rate = -1
+        self.intersect_ids = None
 
     def fit(self, data):
         if self.model_param.intersect_method == "rsa":
@@ -180,17 +181,22 @@ class IntersectGuest(ModelBase):
         else:
             raise TypeError("intersect_method {} is not support yet".format(self.model_param.intersect_method))
 
-        intersect_ids = intersection_obj.run(data)
+        self.intersect_ids = intersection_obj.run(data)
         LOGGER.info("Save intersect results")
 
-        if intersect_ids:
-            self.intersect_num = intersect_ids.count()
+        if self.intersect_ids:
+            self.intersect_num = self.intersect_ids.count()
             self.intersect_rate = self.intersect_num * 1.0 / data.count()
-
-        return intersect_ids
-
-    def save_data(self):
-        self.callback_metric(metric_name="intersect",
-                             metric_namespace='intersection',
+        
+        self.callback_metric(metric_name="intersection",
+                             metric_namespace='train',
                              metric_data=[Metric("intersect_count", self.intersect_num),
                                           Metric("intersect_rate", self.intersect_rate)])
+        #read_metric_res = self.tracker.read_metric_data(metric_name="intersection",metric_namespace='train')
+
+        #for metric_point in read_metric_res:
+        #    LOGGER.debug("metric.key={}, metric.value={}".format(metric_point.key, metric_point.value))
+
+
+    def save_data(self):
+        return self.intersect_ids

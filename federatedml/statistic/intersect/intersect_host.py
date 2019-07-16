@@ -19,13 +19,15 @@ from arch.api.federation import remote, get
 from arch.api.utils import log_utils
 from fate_flow.entity.metric import Metric
 from federatedml.model_base import ModelBase
-from federatedml.param import IntersectParam
+#from federatedml.param import IntersectParam
+from federatedml.param.intersect_param import IntersectParam
 from federatedml.secureprotol import gmpy_math
 from federatedml.secureprotol.encrypt import RsaEncrypt
 from federatedml.statistic.intersect import RawIntersect
 from federatedml.statistic.intersect import RsaIntersect
 from federatedml.util import consts
-from federatedml.util.transfer_variable import RsaIntersectTransferVariable
+#from federatedml.util.transfer_variable import RsaIntersectTransferVariable
+from federatedml.util.transfer_variable.rsa_intersect_transfer_variable import RsaIntersectTransferVariable
 
 LOGGER = log_utils.getLogger()
 
@@ -131,6 +133,7 @@ class IntersectHost(ModelBase):
         self.model_param = IntersectParam()
         self.intersect_num = -1
         self.intersect_rate = -1
+        self.intersect_ids = None
 
     def fit(self, data):
         if self.model_param.intersect_method == "rsa":
@@ -142,17 +145,18 @@ class IntersectHost(ModelBase):
         else:
             raise TypeError("intersect_method {} is not support yet".format(self.model_param.intersect_method))
 
-        intersect_ids = intersection_obj.run(data)
+        self.intersect_ids = intersection_obj.run(data)
         LOGGER.info("Save intersect results")
 
-        if intersect_ids:
-            self.intersect_num = intersect_ids.count()
+        if self.intersect_ids:
+            self.intersect_num = self.intersect_ids.count()
             self.intersect_rate = self.intersect_num * 1.0 / data.count()
-
-        return intersect_ids
-
-    def save_data(self):
+        
         self.callback_metric(metric_name="intersect",
                              metric_namespace='intersection',
                              metric_data=[Metric("intersect_count", self.intersect_num),
                                           Metric("intersect_rate", self.intersect_rate)])
+
+
+    def save_data(self):
+        return self.intersect_ids
