@@ -35,7 +35,7 @@ public class LogFileService {
 
     String JOB_LOG_PATH = "$job_id/$role/$party_id/$file_name";
     final static String TASK_LOG_PATH = "$job_id/$role/$party_id/$component_id/$file_name";
-    final static String DEFAULT_FILE_NAME = "DEBUG.log";
+    final static String DEFAULT_FILE_NAME = "INFO.log";
 
     final static String DEFAULT_COMPONENT_ID = "default";
     final static String DEFAULT_LOG_TYPE = "default";
@@ -63,6 +63,8 @@ public class LogFileService {
         logInfo.put(Dict.LOG_LINE_NUM, lineNum);
         return JSON.toJSONString(logInfo);
     }
+
+
 
     public static Map toLogMap(String content, long lineNum) {
         Map logInfo = Maps.newHashMap();
@@ -94,19 +96,11 @@ public class LogFileService {
 
     public String buildFilePath(String jobId, String componentId, String type,String  role,String partyId) {
 
-      //  JobWithBLOBs  jobWithBLOBs =  jobManagerService.queryJobByFJobId(jobId);
-
         Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,componentId,type,role,partyId));
-
-//        String  role =jobWithBLOBs.getfRole();
-//
-//        String  partyId = jobWithBLOBs.getfPartyId();
-
         String filePath = "";
         if (componentId == null || (componentId != null && componentId.equals(DEFAULT_COMPONENT_ID))) {
 
             filePath = JOB_LOG_PATH.replace("$job_id", jobId).replace("$role",role).replace("$party_id",partyId);
-
 
         } else {
             filePath = TASK_LOG_PATH.replace("$job_id", jobId).replace("$component_id", componentId).replace("$role",role).replace("$party_id",partyId);
@@ -119,23 +113,16 @@ public class LogFileService {
             switch(type){
                 case  "error":       filePath = filePath.replace("$file_name", "ERROR.log");  break;
                 case  "debug":       filePath = filePath.replace("$file_name", "DEBUG.log");  break;
-                case   "info":          filePath = filePath.replace("$file_name", "INFO.log");  break;
-                case  "warning":  filePath =filePath.replace("$file_name", "WARN.log");  break;
-                default:   filePath = filePath.replace("$file_name", "INFO.log");
+                case   "info":       filePath = filePath.replace("$file_name", "INFO.log");  break;
+                case  "warning":     filePath =filePath.replace("$file_name", "WARN.log");  break;
+                default:             filePath = filePath.replace("$file_name", "INFO.log");
 
             }
 
         }
-
         String  result = FATE_DEPLOY_PREFIX + filePath;
         logger.info("build filePath result {}", result);
         return result;
-         // return "/data/project/fdn/nginx/logs/access.log";
-//        SimpleDateFormat  simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-//         Date  date  = new Date();
-//
-//         String  temp =  simpleDateFormat.format(date);
-//          return  "/data/projects/fateboard/bin/logs/"+temp+"/httpclient.0.log";
     }
 
     public Integer getRemoteFileLineCount(SshInfo sshInfo, String logFilePath) throws Exception {

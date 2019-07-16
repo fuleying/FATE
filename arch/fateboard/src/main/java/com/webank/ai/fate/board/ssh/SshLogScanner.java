@@ -1,6 +1,8 @@
 package com.webank.ai.fate.board.ssh;
 
+import com.alibaba.fastjson.JSON;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import com.jcraft.jsch.Channel;
 import com.webank.ai.fate.board.log.LogFileService;
 import com.webank.ai.fate.board.log.LogScanner;
@@ -12,6 +14,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.List;
+import java.util.Map;
 
 
 public class SshLogScanner implements Runnable, LogScanner {
@@ -39,10 +43,14 @@ public class SshLogScanner implements Runnable, LogScanner {
 
     SshInfo sshInfo;
 
+    Integer  beginLine;
+
+    Integer  batchSize=100;
+
     public SshLogScanner(javax.websocket.Session webSocketSession,
                          LogFileService logFileService,
                          SshInfo sshInfo,
-                         String jobId, String componentId, String type,String  role,String partyId) {
+                         String jobId, String componentId, String type,String  role,String partyId,Integer  beginLine) {
         Preconditions.checkArgument(jobId != null && !jobId.equals(""));
         this.jobId = jobId;
         Preconditions.checkArgument(componentId != null && !componentId.equals(""));
@@ -53,6 +61,8 @@ public class SshLogScanner implements Runnable, LogScanner {
         this.type = type;
         this.webSocketSession = webSocketSession;
         this.logFileService = logFileService;
+        this.beginLine = beginLine;
+
     }
 
 
@@ -63,31 +73,42 @@ public class SshLogScanner implements Runnable, LogScanner {
         Channel tailChannel = null;
 
         try {
-            int beginNum = 0;
-            int readLine = beginNum;
-            //tailChannel = logFileService.getRemoteLogStream(  jobId, componentId,beginNum);
+
+            int readLine = beginLine;
             String ip = sshInfo.getIp();
             Channel channel = null;
             InputStream inputStream = null;
+            String cmd = logFileService.buildCommand(beginLine, filePath);
             while (webSocketSession.isOpen() && !needStop) {
 
                 try {
-                    String cmd = logFileService.buildCommand(beginNum, filePath);
                     channel = logFileService.getRemoteLogStream(sshInfo, cmd);
                     inputStream = channel.getInputStream();
                     reader = new BufferedReader(new InputStreamReader(inputStream));
                     String content = reader.readLine();
+                    List<Map> result = Lists.newArrayList();
+                    int  batchCount = 0;
                     while ((content = reader.readLine()) != null && !needStop) {
                         readLine++;
                         logger.info("remote file readline {}",readLine);
-                        String jsonContent = LogFileService.toJsonString(content, 0, readLine);
-                        // System.err.println("=======================" + jsonContent);
-                        if (webSocketSession.isOpen()) {
-                            webSocketSession.getBasicRemote().sendText(jsonContent);
-                        } else {
-                            break;
+
+                        Map jsonContent = LogFileService.toLogMap(content, readLine);
+                        result.add(jsonContent);
+                        if(result.size()>=batchSize){
+                            if(webSocketSession.isOpen()) {
+                                webSocketSession.getBasicRemote().sendText(JSON.toJSONString(result));
+                            }
+                            result.clear();
+
+                        }
+
+                    }
+                    if (webSocketSession.isOpen()) {
+                        if(result.size()!=0) {
+                            webSocketSession.getBasicRemote().sendText(JSON.toJSONString(result));
                         }
                     }
+
                 } finally {
                     if (channel != null) {
                         channel.disconnect();
@@ -96,12 +117,12 @@ public class SshLogScanner implements Runnable, LogScanner {
                         inputStream.close();
                     }
                 }
-                if (readLine > beginNum) {
+                if (readLine > beginLine) {
                     Thread.sleep(200);
                 } else {
                     Thread.sleep(10000);
                 }
-                beginNum = readLine;
+                beginLine = readLine;
             }
         } catch (Throwable e) {
             e.printStackTrace();

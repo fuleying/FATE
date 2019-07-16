@@ -48,7 +48,7 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
 
     static LogFileService logFileService;
 
-    private Integer tailNum = 50;
+    private Integer tailNum = 1000;
 
 
 
@@ -75,6 +75,8 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
 
     ) throws Exception {
 
+
+        //session.getBasicRemote().setBatchingAllowed(true);
 
         String filePath = logFileService.buildFilePath(jobId, componentId, type,role,partyId);
 
@@ -106,6 +108,7 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
             /**
              * 远程文件
              */
+            logger.info("local file path {} is not exist,try to find remote file",filePath);
 
             LogFileService.JobTaskInfo jobTaskInfo = logFileService.getJobTaskInfo(jobId, componentId,role,partyId);
 
@@ -113,7 +116,7 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
 
              String localIp  = GetSystemInfo.getLocalIp();
 
-             if(localIp.equals(jobTaskInfo.ip)){
+             if(localIp.equals(jobTaskInfo.ip)||"0.0.0.0".equals(jobTaskInfo.ip)){
                  logger.error("local log file {} not exist",filePath);
                  return ;
              }
@@ -126,7 +129,12 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
                 String jobDir = logFileService.getJobDir(jobId);
                 logFileTransferEventProducer.onData(sshInfo, jobDir, jobDir);
             }
-            SshLogScanner sshLogScanner = new SshLogScanner(session, logFileService, sshInfo, jobId, componentId, type,role,partyId);
+
+             Integer  lines= logFileService.getRemoteFileLineCount(sshInfo,filePath);
+
+            Integer  beginLine =  tailNum>lines?0:lines-tailNum;
+
+            SshLogScanner sshLogScanner = new SshLogScanner(session, logFileService, sshInfo, jobId, componentId, type,role,partyId,beginLine);
 
             sessionMap.put(session, sshLogScanner);
 

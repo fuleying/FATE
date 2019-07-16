@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.List;
+import java.util.Map;
 
 
 public class TailFile {
@@ -141,6 +142,19 @@ public class TailFile {
                 break;
             }
             String content = LogFileService.toJsonString(new String(event), this.getLineReadPos(), this.getLinePos());
+            events.add(content);
+        }
+        return events;
+    }
+
+    public List<Map> readEventMap(int numEvents) throws IOException {
+        List<Map> events = Lists.newLinkedList();
+        for (int i = 0; i < numEvents; i++) {
+            byte[] event = readEvent();
+            if (event == null) {
+                break;
+            }
+            Map content = LogFileService.toLogMap(new String(event), this.getLinePos());
             events.add(content);
         }
         return events;
