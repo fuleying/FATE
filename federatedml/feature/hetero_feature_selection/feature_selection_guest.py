@@ -54,7 +54,6 @@ class HeteroFeatureSelectionGuest(BaseHeteroFeatureSelection):
             self.left_cols
         ))
         new_data = self._transfer_data(data_instances)
-
         return new_data
 
     def filter_one_method(self, data_instances, method):

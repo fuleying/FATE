@@ -72,6 +72,7 @@ class BaseHeteroFeatureBinning(ModelBase):
         self.cols_dict = {}
         self.binning_obj = None
         self.header = []
+        self.schema = {}
         self.has_synchronized = False
         self.flowid = ''
         self.binning_result = {}  # dict of iv_attr
@@ -94,6 +95,7 @@ class BaseHeteroFeatureBinning(ModelBase):
         transform_cols_idx = self.model_param.transform_param.transform_cols
         transform_type = self.model_param.transform_param.transform_type
         data_instances = self.binning_obj.transform(data_instances, transform_cols_idx, transform_type)
+
         self.set_schema(data_instances)
         self.data_output = data_instances
         return data_instances
@@ -186,7 +188,10 @@ class BaseHeteroFeatureBinning(ModelBase):
     def _parse_cols(self, data_instances):
         if self.header is not None and len(self.header) != 0:
             return
+
+        LOGGER.debug("Before Binning, schema is : {}".format(data_instances.schema))
         header = get_header(data_instances)
+        self.schema = data_instances.schema
         self.header = header
         # LOGGER.debug("data_instance count: {}, header: {}".format(data_instances.count(), header))
         if self.cols_index == -1:
@@ -213,7 +218,10 @@ class BaseHeteroFeatureBinning(ModelBase):
             self.cols_dict[col] = col_index
 
     def set_schema(self, data_instance):
-        data_instance.schema["header"] = self.header
+        self.schema['header'] = self.header
+        data_instance.schema = self.schema
+        LOGGER.debug("After Binning, when setting schema, schema is : {}".format(data_instance.schema))
+
 
     def _abnormal_detection(self, data_instances):
         """

@@ -153,6 +153,8 @@ class HomoLRArbiter(HomoLRBase):
                 pred_prob = decrypted_wx.mapValues(lambda x: activation.sigmoid(x))
                 pred_label = self.classified(pred_prob, self.predict_param.threshold)
                 predict_result_id = self.transfer_variable.generate_transferid(self.transfer_variable.predict_result)
+                LOGGER.debug("predict_result_id: {}".format(predict_result_id))
+
                 LOGGER.debug(
                     "Start to remote pred_label: {}, transfer_id: {}".format(pred_label, predict_result_id))
                 federation.remote(pred_label,

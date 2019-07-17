@@ -97,7 +97,6 @@ class QuantileBinning(Binning):
                 if s_p not in split_point:
                     split_point.append(s_p)
             split_points[col_name] = split_point
-        self._show_split_points(split_points)
         self.split_points = split_points
         return split_points
 
