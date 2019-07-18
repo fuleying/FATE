@@ -45,7 +45,6 @@ class HomoLRGuest(HomoLRBase):
         self.classes_ = [0, 1]
 
         self.evaluator = Evaluation()
-        self.header = []
         self.loss_history = []
         self.is_converged = False
         self.role = consts.GUEST
@@ -55,9 +54,7 @@ class HomoLRGuest(HomoLRBase):
             return data_instances
 
         self._abnormal_detection(data_instances)
-
-        self.header = data_instances.schema.get('header')  # ['x1', 'x2', 'x3' ... ]
-
+        self.init_schema(data_instances)
         self.__init_parameters()
 
         self.__init_model(data_instances)
@@ -99,9 +96,9 @@ class HomoLRGuest(HomoLRBase):
                                      extra_metas={
                                          "unit_name": "iters"
                                      })
-            metric_name = self.get_metric_name('loss')
-            self.callback_meta(metric_name=metric_name, metric_namespace='train', metric_meta=metric_meta)
-            self.callback_metric(metric_name=metric_name,
+            # metric_name = self.get_metric_name('loss')
+            self.callback_meta(metric_name='loss', metric_namespace='train', metric_meta=metric_meta)
+            self.callback_metric(metric_name='loss',
                                  metric_namespace='train',
                                  metric_data=[Metric(iter_num, total_loss)])
 
@@ -155,8 +152,8 @@ class HomoLRGuest(HomoLRBase):
         self.show_meta()
         # self.show_model()
         LOGGER.debug("in fit self coef: {}".format(self.coef_))
-        data_instances.schema['header'] = self.header
-        self.data_output = data_instances
+        # data_instances.schema['header'] = self.header
+        self.set_schema(data_instances)
         return data_instances
 
     def __init_parameters(self):
@@ -200,14 +197,10 @@ class HomoLRGuest(HomoLRBase):
         pred_prob = wx.mapValues(lambda x: activation.sigmoid(x))
         pred_label = self.classified(pred_prob, self.predict_param.threshold)
 
-        if self.predict_param.with_proba:
-            predict_result = data_instances.mapValues(lambda x: x.label)
-            predict_result = predict_result.join(pred_prob, lambda x, y: (x, y))
-        else:
-            predict_result = data_instances.mapValues(lambda x: (x.label, None))
-
-        predict_result = predict_result.join(pred_label, lambda x, y: [x[0], x[1], y])
+        predict_result = data_instances.mapValues(lambda x: x.label)
+        predict_result = predict_result.join(pred_prob, lambda x, y: (x, y))
+        predict_result = predict_result.join(pred_label, lambda x, y: [x[0], y, x[1], {"1": x[1], "0": (1 - x[1])}])
         return predict_result
 
-    def set_flowid(self, flowid=0):
-        self.transfer_variable.set_flowid(flowid)
+    # def set_flowid(self, flowid=0):
+    #     self.transfer_variable.set_flowid(flowid)

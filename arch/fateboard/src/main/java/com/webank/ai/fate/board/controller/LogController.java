@@ -8,17 +8,20 @@ import com.google.common.collect.Lists;
 import com.webank.ai.fate.board.global.ErrorCode;
 import com.webank.ai.fate.board.global.ResponseResult;
 import com.webank.ai.fate.board.log.LogFileService;
+import com.webank.ai.fate.board.pojo.SshInfo;
+import com.webank.ai.fate.board.ssh.SshService;
+import com.webank.ai.fate.board.utils.Dict;
+import com.webank.ai.fate.board.utils.GetSystemInfo;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 
 import javax.servlet.http.HttpSession;
+import javax.xml.bind.ValidationException;
 import java.io.*;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +33,8 @@ public class LogController {
     private final Logger logger = LoggerFactory.getLogger(LogController.class);
     @Autowired
     LogFileService logFileService;
+    @Autowired
+    SshService   sshService;
 
     @RequestMapping(value = "/queryLogWithSizeSSH/{jobId}/{role}/{partyId}/{componentId}/{type}/{begin}/{end}", method = RequestMethod.GET)
     @ResponseBody
@@ -60,13 +65,49 @@ public class LogController {
 
     }
 
+
+    @RequestMapping(value = "/queryLogSize/{jobId}/{role}/{partyId}/{componentId}/{type}", method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseResult  queryLogSize (@PathVariable String componentId,
+                         @PathVariable String jobId,
+                         @PathVariable String type,
+                         @PathVariable String role,
+                         @PathVariable String partyId
+         ) throws Exception {
+
+        ResponseResult  responseResult = new  ResponseResult();
+        responseResult.setData(0);
+        String filePath = logFileService.buildFilePath(jobId, componentId, type,role,partyId);
+        Preconditions.checkArgument(StringUtils.isNotEmpty(filePath));
+        if(LogFileService.checkFileIsExist(filePath)){
+            Integer  count = LogFileService.getLocalFileLineCount(new File(filePath));
+            responseResult.setData(count);
+        }else{
+            String ip = logFileService.getJobTaskInfo(jobId, componentId,role,partyId).ip;
+            String  localIp = GetSystemInfo.getLocalIp();
+            logger.error("local ip {} remote ip {}",localIp,ip);
+            if(localIp.equals(ip)||"0.0.0.0".equals(ip)||"127.0.0.1".equals(ip)) {
+              return  responseResult;
+            }
+            logFileService.checkSshInfo(ip);
+            SshInfo sshInfo = this.sshService.getSSHInfo(ip);
+            try {
+                Integer count = logFileService.getRemoteFileLineCount(sshInfo, filePath);
+                responseResult.setData(count);
+            }catch(Exception e){
+                responseResult.setData(0);
+              //  logger.error("getRemoteFileLineCount filePath {} error");
+            }
+        }
+        return responseResult;
+    }
+
     public long getLineNumber(File file) {
         if (file.exists()) {
             try {
                 FileReader fileReader = new FileReader(file);
                 LineNumberReader lineNumberReader = new LineNumberReader(fileReader);
                 lineNumberReader.skip(Long.MAX_VALUE);
-
                 long lines = lineNumberReader.getLineNumber() + 1;
                 fileReader.close();
                 lineNumberReader.close();
@@ -133,7 +174,14 @@ public class LogController {
 
             String ip = logFileService.getJobTaskInfo(jobId, componentId,role,partyId).ip;
 
-            Preconditions.checkArgument(ip != null && !ip.equals(""));
+             logFileService.checkSshInfo(ip);
+
+           // Preconditions.checkArgument(ip != null && !ip.equals(""));
+
+            if(StringUtils.isEmpty(ip))
+                return null;
+
+
 
             List<Map> logs = logFileService.getRemoteLogWithFixSize(jobId, componentId, type,role,partyId, begin, end - begin + 1);
 

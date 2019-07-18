@@ -57,6 +57,8 @@ class BaseLogisticRegression(ModelBase):
         self.model_meta_name = 'LogisticRegressionMeta'
         self.role = ''
         self.mode = ''
+        self.schema = {}
+        self.header = []
 
     def _init_model(self, params):
         self.model_param = params
@@ -114,10 +116,10 @@ class BaseLogisticRegression(ModelBase):
     def compute_wx(self, data_instances, coef_, intercept_=0):
         return data_instances.mapValues(lambda v: fate_operator.dot(v.features, coef_) + intercept_)
 
-    def set_flowid(self, flowid=0):
-        if self.transfer_variable is not None:
-            self.transfer_variable.set_flowid(flowid)
-            LOGGER.debug("set flowid:" + str(flowid))
+    # def set_flowid(self, flowid=0):
+    #     if self.transfer_variable is not None:
+    #         self.transfer_variable.set_flowid(flowid)
+    #         LOGGER.debug("set flowid:" + str(flowid))
 
     def update_model(self, gradient):
         if self.fit_intercept:
@@ -324,3 +326,15 @@ class BaseLogisticRegression(ModelBase):
         self.tracker.log_metric_data(metric_name=metric_name,
                                      metric_namespace=metric_namespace,
                                      metrics=metric_data)
+
+    def set_schema(self, data_instance, header=None):
+        if header is None:
+            self.schema["header"] = self.header
+        else:
+            self.schema["header"] = header
+        data_instance.schema = self.schema
+        return data_instance
+
+    def init_schema(self, data_instance):
+        self.schema = data_instance.schema
+        self.header = self.schema.get('header')

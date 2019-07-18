@@ -37,8 +37,8 @@ class OneHotEncoder(ModelBase):
         super(OneHotEncoder, self).__init__()
         self.cols = []
         self.header = []
+        self.schema = {}
         self.col_maps = {}
-        self.cols_dict = {}
         self.output_data = None
         self.model_param = OneHotEncoderParam()
 
@@ -51,7 +51,7 @@ class OneHotEncoder(ModelBase):
 
         f1 = functools.partial(self.record_new_header,
                                cols=self.cols,
-                               cols_dict=self.cols_dict)
+                               header=self.header)
 
         col_maps = data_instances.mapPartitions(f1)
 
@@ -59,8 +59,10 @@ class OneHotEncoder(ModelBase):
         col_maps = col_maps.reduce(f2)
         self._detect_overflow(col_maps)
         self.col_maps = col_maps
+        LOGGER.debug("Before set_schema in fit, schema is : {}, header: {}".format(self.schema, self.header))
         self.set_schema(data_instances)
         data_instances = self.transform(data_instances)
+        LOGGER.debug("After transform in fit, schema is : {}, header: {}".format(self.schema, self.header))
 
         return data_instances
 
@@ -74,6 +76,9 @@ class OneHotEncoder(ModelBase):
         self._init_cols(data_instances)
         ori_header = self.header.copy()
         self._transform_schema()
+        LOGGER.debug("In Onehot transform, ori_header: {}, transfered_header: {}".format(
+            ori_header, self.header
+        ))
         f = functools.partial(self.transfer_one_instance,
                               col_maps=self.col_maps,
                               ori_header=ori_header,
@@ -85,24 +90,22 @@ class OneHotEncoder(ModelBase):
     def _transform_schema(self):
 
         header = self.header
-        LOGGER.info("[Result][OneHotEncoder]Before one-hot, data_instances schema is : {}".format(header))
+        LOGGER.debug("[Result][OneHotEncoder]Before one-hot, data_instances schema is : {}".format(header))
         for col_name, value_map in self.col_maps.items():
             col_idx = header.index(col_name)
             new_headers = list(value_map.values())
+            new_headers = sorted(new_headers)
             if col_idx == 0:
                 header = new_headers + header[1:]
             else:
                 header = header[:col_idx] + new_headers + header[col_idx + 1:]
 
-        self.cols_dict = {}
-        for col in header:
-            col_index = header.index(col)
-            self.cols_dict[col] = col_index
         self.header = header
-        LOGGER.info("[Result][OneHotEncoder]After one-hot, data_instances schema is : {}".format(header))
+        LOGGER.debug("[Result][OneHotEncoder]After one-hot, data_instances schema is : {}".format(header))
 
     def _init_cols(self, data_instances):
         header = get_header(data_instances)
+        self.schema = data_instances.schema
         self.header = header
         if self.cols_index == -1:
             self.cols = header
@@ -120,13 +123,8 @@ class OneHotEncoder(ModelBase):
                 cols.append(header[idx])
             self.cols = cols
 
-        self.cols_dict = {}
-        for col in self.cols:
-            col_index = header.index(col)
-            self.cols_dict[col] = col_index
-
     @staticmethod
-    def record_new_header(data, cols, cols_dict):
+    def record_new_header(data, cols, header):
         """
         Generate a new schema based on data value. Each new value will generate a new header.
 
@@ -142,7 +140,7 @@ class OneHotEncoder(ModelBase):
             feature = instance.features
             for col_name in cols:
                 this_col_map = col_maps.get(col_name)
-                col_index = cols_dict.get(col_name)
+                col_index = header.index(col_name)
                 feature_value = feature[col_index]
                 feature_value = str(feature_value)
                 if feature_value not in this_col_map:
@@ -186,8 +184,7 @@ class OneHotEncoder(ModelBase):
                 feature_dict[col_name] = 0
 
         for col_name, value_dict in col_maps.items():
-            feature_value = feature_dict.get(col_name)
-            feature_value = str(feature_value)
+            feature_value = str(feature_dict.get(col_name))
             header_name = value_dict.get(feature_value)
             feature_dict[header_name] = 1
 
@@ -200,7 +197,8 @@ class OneHotEncoder(ModelBase):
         return instance
 
     def set_schema(self, data_instance):
-        data_instance.schema = {"header": self.header}
+        self.schema['header'] = self.header
+        data_instance.schema = self.schema
 
     def _get_meta(self):
         meta_protobuf_obj = onehot_meta_pb2.OneHotMeta(cols=self.cols)

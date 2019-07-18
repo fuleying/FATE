@@ -176,7 +176,7 @@ class Binning(object):
 
     def transform(self, data_instances, transform_cols_idx, transform_type):
         self._init_cols(data_instances)
-        if transform_type == 'bin_nums':
+        if transform_type == 'bin_num':
             data_instances, _, _ = self.convert_feature_to_bin(data_instances, transform_cols_idx, self.split_points)
 
         return data_instances
@@ -370,9 +370,6 @@ class Binning(object):
         self.iv_result = iv_attrs
         return iv_attrs
 
-    def _show_split_points(self, split_points):
-        LOGGER.info('[Result][FeatureBinning][{}]split points are: {}'.format(self.party_name, split_points))
-
     @staticmethod
     def bin_data(instance, split_points, cols_dict, header, is_sparse):
         """
@@ -436,6 +433,7 @@ class Binning(object):
             if value <= split_point:
                 col_bin_num = bin_num
                 break
+        col_bin_num = int(col_bin_num)
         return col_bin_num
 
     @staticmethod

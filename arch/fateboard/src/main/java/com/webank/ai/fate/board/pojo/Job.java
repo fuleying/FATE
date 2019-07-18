@@ -1,5 +1,8 @@
 package com.webank.ai.fate.board.pojo;
 
+import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Job extends JobKey {
     private String fName;
 
@@ -20,9 +23,9 @@ public class Job extends JobKey {
     private Long fUpdateTime;
 
     private Long fStartTime;
-
+    @JsonProperty(defaultValue = "" )
     private Long fEndTime;
-
+    @JsonProperty(defaultValue = "" )
     private Long fElapsed;
 
     private String fRunIp;
@@ -130,4 +133,15 @@ public class Job extends JobKey {
     public void setfRunIp(String fRunIp) {
         this.fRunIp = fRunIp == null ? null : fRunIp.trim();
     }
+
+
+    public  static void main(String[] args){
+
+        Job  job = new Job();
+        
+       System.err.println( JSON.toJSONString(job));
+
+
+    }
+
 }

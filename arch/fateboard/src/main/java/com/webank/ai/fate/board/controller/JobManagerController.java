@@ -143,7 +143,9 @@ public class JobManagerController {
 
     @RequestMapping(value = "/query/all/{totalRecord}/{pageNum}/{pageSize}", method = RequestMethod.GET)
 
-    public ResponseResult queryJob(@PathVariable(value = "totalRecord") long totalRecord, @PathVariable(value = "pageNum") long pageNum, @PathVariable(value = "pageSize") long pageSize) {
+    public ResponseResult queryJob(@PathVariable(value = "totalRecord") long totalRecord,
+                                   @PathVariable(value = "pageNum") long pageNum,
+                                   @PathVariable(value = "pageSize") long pageSize) {
 
         PageBean<Map> listPageBean = new PageBean<>(pageNum, pageSize, totalRecord);
 

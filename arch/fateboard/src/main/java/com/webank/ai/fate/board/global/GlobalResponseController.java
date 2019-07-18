@@ -37,7 +37,11 @@ public class GlobalResponseController implements ResponseBodyAdvice<Object> {
                                   Class<? extends HttpMessageConverter<?>> aClass,
                                   ServerHttpRequest serverHttpRequest,
                                   ServerHttpResponse serverHttpResponse) {
-        return body;
+
+
+
+            return body;
+
 
 
     }

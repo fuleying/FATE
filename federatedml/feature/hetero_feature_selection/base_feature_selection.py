@@ -50,6 +50,7 @@ class BaseHeteroFeatureSelection(ModelBase):
         self.left_cols_index = []
         # self.cols_dict = {}
         self.header = []
+        self.schema = {}
         self.party_name = 'Base'
 
         self.filter_meta_list = []
@@ -169,11 +170,13 @@ class BaseHeteroFeatureSelection(ModelBase):
         The cols and left_cols record the index of header. Replace header based on the change
         between left_cols and cols.
         """
-        new_header = []
+        new_header = self.header
         for col_idx, col_name in enumerate(self.header):
             is_left = self.left_cols.get(col_idx)
-            if is_left:
-                new_header.append(col_name)
+            if is_left is None:
+                continue
+            if not is_left:
+                new_header.pop(col_name)
         return new_header
 
     def _transfer_data(self, data_instances):
@@ -186,7 +189,13 @@ class BaseHeteroFeatureSelection(ModelBase):
 
         new_data = data_instances.mapValues(f)
         new_header = self._reset_header()
-        new_data.schema['header'] = new_header
+        # new_data.schema['header'] = new_header
+        new_data = self.set_schema(new_data, new_header)
+
+        one_data = new_data.first()[1]
+        LOGGER.debug("In feature selection transform, transfered_data features: {}, labels: {}, weight: {}".format(
+            one_data.features, one_data.label, one_data.weight))
+
         return new_data
 
     def _abnormal_detection(self, data_instances):
@@ -211,13 +220,17 @@ class BaseHeteroFeatureSelection(ModelBase):
         """
         As for all columns including those not specified in user params, record which columns left.
         """
+        left_col_list = []
         for col_idx, is_left in new_left_cols.items():
             if not is_left:
                 self.left_cols[col_idx] = False
             elif is_left:
+                left_col_list.append(col_idx)
                 self.left_cols[col_idx] = True
+        self.cols = left_col_list
 
     def _init_cols(self, data_instances):
+        self.schema = data_instances.schema
         header = get_header(data_instances)
         if self.cols_index == -1:
             self.cols = [i for i in range(len(header))]
@@ -253,4 +266,13 @@ class BaseHeteroFeatureSelection(ModelBase):
                 self.left_cols[col_name] = True
             else:
                 self.left_cols[col_name] = False
+
+    def set_schema(self, data_instance, header=None):
+        if header is None:
+            self.schema["header"] = self.header
+        else:
+            self.schema["header"] = header
+        data_instance.schema = self.schema
+        return data_instance
+
 

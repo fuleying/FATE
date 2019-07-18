@@ -1,5 +1,7 @@
 package com.webank.ai.fate.board.log;
 
+import com.alibaba.fastjson.JSON;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -7,6 +9,7 @@ import javax.websocket.Session;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public class RandomFileScanner implements Runnable, LogScanner {
 
@@ -70,33 +73,49 @@ public class RandomFileScanner implements Runnable, LogScanner {
                         logger.info("roll file thread return");
                         return;
                     }
-                    List<String> lines = tailFile.readEvents(100);
+                    //List<String> lines = tailFile.readEvents(100);
+                    List<Map> lines  = tailFile.readEventMap(100);
 
                     if (lines == null) {
                         throw new Exception("lines not exist");
                     }
                     if (lines.size() == 0) {
+//                        if(session.isOpen())
+//                        {
+//                            session.getBasicRemote().flushBatch();
+//                        }
+
                         Thread.sleep(500);
+
+
                     } else {
+                        List<Map>  result = Lists.newArrayList();
                         lines.forEach(content -> {
 
                             flushNum++;
                             if (session.isOpen()) {
-                                try {
+
                                     if (flushNum > skipLine) {
 
-                                        session.getBasicRemote().sendText(content);
-                                    }
-                                } catch (IOException e) {
+                                      //  session.getBasicRemote().sendText(content);
+                                        result.add(content);
 
-                                    logger.error("IOException", e);
-                                }
+                                    }
+
                             } else {
                                 needStop = true;
                                 return ;
                             }
 
                         });
+
+                        if(session.isOpen())
+                        {
+                            session.getBasicRemote().sendText(JSON.toJSONString(result));
+                           // session.getBasicRemote().flushBatch();
+                        }
+
+
                     }
                 } catch (Exception e) {
                     logger.error("roll local file error", e);
