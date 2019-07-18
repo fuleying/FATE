@@ -19,7 +19,10 @@ import functools
 import numpy as np
 
 from arch.api import federation
+from arch.api.proto import lr_model_param_pb2
 from arch.api.utils import log_utils
+from fate_flow.entity.metric import Metric
+from fate_flow.entity.metric import MetricMeta
 from federatedml.logistic_regression.homo_logsitic_regression.homo_lr_base import HomoLRBase
 from federatedml.model_selection import MiniBatch
 from federatedml.optim import Initializer
@@ -27,11 +30,8 @@ from federatedml.optim import activation
 from federatedml.optim.federated_aggregator.homo_federated_aggregator import HomoFederatedAggregator
 from federatedml.optim.gradient import LogisticGradient, TaylorLogisticGradient
 from federatedml.statistic import data_overview
+from federatedml.statistic.data_overview import get_features_shape
 from federatedml.util import consts
-from fate_flow.entity.metric import MetricMeta
-from fate_flow.entity.metric import Metric
-from federatedml.util.transfer_variable.homo_lr_transfer_variable import HomoLRTransferVariable
-from arch.api.proto import lr_model_param_pb2
 
 LOGGER = log_utils.getLogger()
 
@@ -69,7 +69,7 @@ class HomoLRHost(HomoLRBase):
         if not self.need_run:
             return data_instances
 
-        self.header = data_instances.schema.get('header')  # ['x1', 'x2', 'x3' ... ]
+        self.set_schema(data_instances)
         LOGGER.debug("Before trainning, self.header: {}".format(self.header))
         self._abnormal_detection(data_instances)
 
@@ -187,10 +187,7 @@ class HomoLRHost(HomoLRBase):
             if converge_flag:
                 break
                 # self.save_model()
-        LOGGER.debug("After trained, self.header: {}, data_instance.header: {}".format(
-            self.header,
-            data_instances.schema['header']))
-        self.data_output = data_instances
+        self.set_schema(data_instances)
 
     def __init_parameters(self, data_instances):
 
@@ -260,7 +257,6 @@ class HomoLRHost(HomoLRBase):
         else:
             LOGGER.info("in predict, has synchronize encryption information")
 
-        from federatedml.statistic.data_overview import get_features_shape
         feature_shape = get_features_shape(data_instances)
         LOGGER.debug("Shape of coef_ : {}, feature shape: {}".format(len(self.coef_), feature_shape))
         local_data = data_instances.first()
@@ -277,11 +273,30 @@ class HomoLRHost(HomoLRBase):
                               role=consts.ARBITER,
                               idx=0)
             predict_result_id = self.transfer_variable.generate_transferid(self.transfer_variable.predict_result)
+            LOGGER.debug("predict_result_id: {}".format(predict_result_id))
+
             predict_result = federation.get(name=self.transfer_variable.predict_result.name,
                                             tag=predict_result_id,
                                             idx=0)
             # local_predict_table = predict_result.collect()
-            predict_result_table = predict_result.join(data_instances, lambda p, d: [d.label, None, p])
+            LOGGER.debug("predict_result count: {}, data_instances count: {}".format(predict_result.count(),
+                                                                                     data_instances.count()))
+
+            predict_result_table = predict_result.join(data_instances, lambda p, d: [d.label, None, p,
+                                                                                     {"0": None, "1": None}])
+            test_join_table1 = wx.join(data_instances, lambda x, y: [x, y])
+
+            local_predict_result = predict_result.collect()
+            local_data_instance = data_instances.collect()
+
+            for k, v in local_predict_result:
+                LOGGER.debug("local_predict_result key: {}, key_type: {}".format(k, type(k)))
+
+            for k, v in local_data_instance:
+                LOGGER.debug("local_data_instance key: {}, key_type: {}".format(k, type(k)))
+
+            LOGGER.debug("After join, predict_result_table count: {}, test_join_table1 count: {}".format(
+                predict_result_table.count(), test_join_table1.count()))
         else:
             pred_prob = wx.mapValues(lambda x: activation.sigmoid(x))
             pred_label = self.classified(pred_prob, self.predict_param.threshold)
@@ -293,8 +308,9 @@ class HomoLRHost(HomoLRBase):
             predict_result_table = predict_result.join(pred_label, lambda x, y: [x[0], y, x[1],
                                                                                  {"0": None, "1": None}])
 
-        self.data_output = predict_result
         LOGGER.debug("Finish predict")
+
+        LOGGER.debug("In host predict, predict_result_table is : {}".format(predict_result_table.first()))
         return predict_result_table
 
     def __init_model(self, data_instances):

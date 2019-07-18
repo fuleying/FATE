@@ -44,7 +44,7 @@ class TransformParam(BaseParam):
 
     def check(self):
         descr = "Transform Param's "
-        if self.transform_cols is not None or self.transform_cols != -1:
+        if self.transform_cols is not None and self.transform_cols != -1:
             self.check_defined_type(self.transform_cols, descr, ['list'])
         self.check_defined_type(self.transform_type, descr, ['bin_num', None])
 

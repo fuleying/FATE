@@ -76,7 +76,7 @@ class Evaluation(ModelBase):
         self.eval_type = self.model_param.eval_type
         self.metrics = self.model_param.metrics
         self.pos_label = self.model_param.pos_label
-        self.filter_point_num = 1000
+        self.filter_point_num = 100
 
     def _run_data(self, data_sets=None, stage=None):
         data = {}
@@ -121,6 +121,7 @@ class Evaluation(ModelBase):
             data_type = key
             mode = "eval"
             if len(eval_data_local[0][1]) >= 4:
+                LOGGER.debug("read one data:{}".format(eval_data_local[0][1]))
                 mode = eval_data_local[0][1][4]
 
             for d in eval_data_local:

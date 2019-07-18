@@ -34,6 +34,7 @@ class ModelBase(object):
         self.need_run = True
         self.need_cv = False
         self.tracker = None
+        self.cv_fold = 0
 
     def _init_runtime_parameters(self, component_parameters):
         param_extracter = ParamExtract()
@@ -84,24 +85,39 @@ class ModelBase(object):
             self.cross_validation(train_data)
 
         elif train_data:
+            self.set_flowid('train')
             self.fit(train_data)
+            self.set_flowid('predict')
             self.data_output = self.predict(train_data)
 
             if self.data_output:
                 self.data_output = self.data_output.mapValues(lambda value: value + ["train"])
+                for data in list(self.data_output.collect()):
+                    LOGGER.debug("[0]id:{},value:{}".format(data[0], data[1]))
+                    break
 
             if eval_data:
+                self.set_flowid('validate')
                 eval_data_output = self.predict(eval_data)
 
                 if eval_data_output:
                     eval_data_output = eval_data_output.mapValues(lambda value: value + ["validation"])
 
                 if self.data_output and eval_data_output:
+                    for data in list(self.data_output.collect()):
+                        LOGGER.debug("[1]id:{},value:{}".format(data[0], data[1]))
+                        break
+                    for data in list(eval_data_output.collect()):
+                        LOGGER.debug("[3]id:{},value:{}".format(data[0], data[1]))
+                        break
                     self.data_output.union(eval_data_output)
-                elif not self.data_output and eval_data_output:
+                elif self.data_output and eval_data_output:
                     self.data_output = eval_data_output
 
-            self.set_predict_data_schema(self.data_output)
+                    for data in list(self.data_output.collect()):
+                        LOGGER.debug("[2]id:{},value:{}".format(data[0], data[1]))
+                        break
+            self.set_predict_data_schema(self.data_output, train_data.schema)
         
         elif eval_data:
             self.data_output = self.predict(eval_data)
@@ -109,7 +125,7 @@ class ModelBase(object):
             if self.data_output:
                 self.data_output = self.data_output.mapValues(lambda value: value + ["test"])
 
-            self.set_predict_data_schema(self.data_output)
+            self.set_predict_data_schema(self.data_output, eval_data.schema)
         
         else:
             if stage == "fit":
@@ -117,7 +133,10 @@ class ModelBase(object):
             else:
                 self.data_output = self.transform(data)
 
-        LOGGER.debug("In model base, data_output schema: {}".format(self.data_output.schema))
+        if self.data_output:
+            LOGGER.debug("data is {}".format(self.data_output.first()[1].features))
+
+            LOGGER.debug("In model base, data_output schema: {}".format(self.data_output.schema))
 
     def run(self, component_parameters=None, args=None):
         need_cv = self._init_runtime_parameters(component_parameters)
@@ -160,15 +179,17 @@ class ModelBase(object):
         #                     "XXXParam": "model_param"}
         return self.model_output
 
-    def set_flowid(self, flowid=0):
-        self.flowid = '_'.join(map(str, [self.flowid, flowid]))
+    def set_flowid(self, flowid):
+        # self.flowid = '_'.join(map(str, [self.flowid, flowid]))
+        self.flowid = '.'.join([self.taskid, str(flowid)])
+
+    def set_transfer_variable(self):
         if self.transfer_variable is not None:
+            LOGGER.debug("set flowid to transfer_variable, flowid: {}".format(self.flowid))
             self.transfer_variable.set_flowid(self.flowid)
 
     def set_taskid(self, taskid):
         self.taskid = taskid
-        if self.transfer_variable is not None:
-            self.transfer_variable.set_taskid(self.taskid)
 
     def get_metric_name(self, name_prefix):
         if not self.need_cv:
@@ -179,17 +200,28 @@ class ModelBase(object):
     def set_tracker(self, tracker):
         self.tracker = tracker
 
-    def set_predict_data_schema(self, predict_data):
-        predict_data.schema = {"header": ["label", "predict_result", "predict_score", "predict_detail", "type"]}
+    def set_predict_data_schema(self, predict_data, schema):
+        if predict_data is not None:
+            predict_data.schema = {"header": ["label", "predict_result", "predict_score", "predict_detail", "type"],
+                                   "sid_name": schema.get('sid_name')}
 
     def callback_meta(self, metric_name, metric_namespace, metric_meta):
         # tracker = Tracking('123', 'abc')
+        if self.need_cv:
+            metric_name = '.'.join([metric_name, str(self.cv_fold)])
+
         self.tracker.set_metric_meta(metric_name=metric_name,
                                      metric_namespace=metric_namespace,
                                      metric_meta=metric_meta)
 
     def callback_metric(self, metric_name, metric_namespace, metric_data):
         # tracker = Tracking('123', 'abc')
+        if self.need_cv:
+            metric_name = '.'.join([metric_name, str(self.cv_fold)])
+
         self.tracker.log_metric_data(metric_name=metric_name,
                                      metric_namespace=metric_namespace,
                                      metrics=metric_data)
+
+    def set_cv_fold(self, cv_fold):
+        self.cv_fold = cv_fold

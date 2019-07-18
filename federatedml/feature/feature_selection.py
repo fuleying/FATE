@@ -409,7 +409,7 @@ class IVValueSelectFilter(FilterMethod):
             total_feature_values[col_name] = col_value
 
         for host_name, host_feature_values in self.host_feature_values.items():
-            for host_col, host_feature_value in host_feature_values.itemms():
+            for host_col, host_feature_value in host_feature_values.items():
                 new_col_name = '.'.join([host_name, str(host_col)])
                 total_feature_values[new_col_name] = host_feature_value
 
@@ -518,7 +518,7 @@ class IVPercentileFilter(FilterMethod):
             total_feature_values[col_name] = col_value
 
         for host_name, host_feature_values in self.host_feature_values.items():
-            for host_col, host_feature_value in host_feature_values.itemms():
+            for host_col, host_feature_value in host_feature_values.items():
                 new_col_name = '.'.join([host_name, str(host_col)])
                 total_feature_values[new_col_name] = host_feature_value
 

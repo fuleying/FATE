@@ -88,42 +88,62 @@ class KFold(BaseCrossValidator):
         self._init_model(component_parameters)
 
         if data_inst is None:
-            cv_results = self._arbiter_run(original_model)
-            return cv_results
+            self._arbiter_run(original_model)
+            return
+
         LOGGER.debug("data_inst count: {}".format(data_inst.count()))
         data_generator = self.split(data_inst)
-        flowid = 0
+        fold_num = 0
         for train_data, test_data in data_generator:
-            LOGGER.info("KFold flowid is: {}".format(flowid))
-            if self.mode == consts.HETERO:
-                self._synchronize_data(train_data, flowid, consts.TRAIN_DATA)
-                LOGGER.info("Train data Synchronized")
-                self._synchronize_data(test_data, flowid, consts.TEST_DATA)
-                LOGGER.info("Test data Synchronized")
             model = copy.deepcopy(original_model)
-            model.set_flowid(flowid)
+            model.set_flowid(fold_num)
+            model.set_cv_fold(fold_num)
+
+            LOGGER.info("KFold fold_num is: {}".format(fold_num))
+            if self.mode == consts.HETERO:
+                self._synchronize_data(train_data, model.flowid, consts.TRAIN_DATA)
+                LOGGER.info("Train data Synchronized")
+                self._synchronize_data(test_data, model.flowid, consts.TEST_DATA)
+                LOGGER.info("Test data Synchronized")
             LOGGER.debug("train_data count: {}".format(train_data.count()))
 
+            this_flowid = 'train.' + str(fold_num)
+            model.set_flowid(this_flowid)
+            model.set_transfer_variable()
             model.fit(train_data)
+
+            this_flowid = 'predict.' + str(fold_num)
+            model.set_flowid(this_flowid)
+            model.set_transfer_variable()
+
             pred_res = model.predict(test_data)
+            model.set_predict_data_schema(pred_res, test_data.schema)
+
             if pred_res is not None:
-                fold_name = "_".join(['fold', str(flowid)])
+                fold_name = "_".join(['fold', str(fold_num)])
                 pred_res = pred_res.mapValues(lambda value: value + [fold_name])
                 self.evaluate(pred_res, fold_name, model)
-            flowid += 1
+            fold_num += 1
 
         return
 
     def _arbiter_run(self, original_model):
-        for flowid in range(self.n_splits):
-            LOGGER.info("KFold flowid is: {}".format(flowid))
+        for fold_num in range(self.n_splits):
+            LOGGER.info("KFold flowid is: {}".format(fold_num))
             model = copy.deepcopy(original_model)
-            model.set_flowid(flowid)
+            this_flowid = 'train.' + str(fold_num)
+            model.set_flowid(this_flowid)
+            model.set_transfer_variable()
             model.fit()
+
+            this_flowid = 'predict.' + str(fold_num)
+            model.set_flowid(this_flowid)
+            model.set_transfer_variable()
             pred_res = model.predict()
+
             if pred_res is None:
                 continue
-            fold_name = "_".join(['fold', str(flowid)])
+            fold_name = "_".join(['fold', str(fold_num)])
             self.evaluate(pred_res, fold_name, model)
 
     def _init_model(self, param):
@@ -179,7 +199,6 @@ class KFold(BaseCrossValidator):
         LOGGER.debug("In KFold, evaluate_param is: {}".format(self.evaluate_param.__dict__))
         eval_obj._init_model(self.evaluate_param)
         eval_obj.set_tracker(model.tracker)
-        LOGGER.debug("Evaluate_data is : {}".format(eval_data.first()))
         eval_data = {fold_name: eval_data}
         eval_obj.fit(eval_data)
         eval_obj.save_data()
