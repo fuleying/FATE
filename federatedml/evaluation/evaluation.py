@@ -69,12 +69,31 @@ class Evaluation(ModelBase):
             consts.ROOT_MEAN_SQUARED_ERROR
         ]
 
+        self.binary_classification_support_func = [
+            consts.AUC,
+            consts.KS,
+            consts.LIFT,
+            consts.GAIN,
+            consts.ACCURACY,
+            consts.PRECISION,
+            consts.RECALL
+        ]
+
+        self.multi_classification_support_func = [
+            consts.ACCURACY,
+            consts.PRECISION,
+            consts.RECALL
+        ]
+
+        self.metrics = { consts.BINARY: self.binary_classification_support_func,
+                         consts.MULTY: self.multi_classification_support_func,
+                         consts.REGRESSION: self.regression_support_func}
+
         FateStorage.init_storage()
 
     def _init_model(self, model):
         self.model_param = model
         self.eval_type = self.model_param.eval_type
-        self.metrics = self.model_param.metrics
         self.pos_label = self.model_param.pos_label
         self.filter_point_num = 1000
 
@@ -125,8 +144,8 @@ class Evaluation(ModelBase):
 
             for d in eval_data_local:
                 labels.append(d[1][0])
-                pred_scores.append(d[1][1])
-                pred_labels.append(d[1][2])
+                pred_labels.append(d[1][1])
+                pred_scores.append(d[1][2])
 
             if self.eval_type == consts.BINARY or self.eval_type == consts.REGRESSION:
                 if self.pos_label:
@@ -143,7 +162,15 @@ class Evaluation(ModelBase):
                 pred_results = pred_labels
 
             eval_result = defaultdict(list)
-            for eval_metric in self.model_param.metrics:
+
+
+            try:
+                metrics = self.metrics[self.eval_type]
+            except:
+                LOGGER.warning("Unknown eval_type of {}".format(self.eval_type))
+                metrics = []
+
+            for eval_metric in metrics:
                 if None in pred_results:
                     continue
                 res = getattr(self, eval_metric)(labels, pred_results)
@@ -155,6 +182,8 @@ class Evaluation(ModelBase):
 
     def __save_single_value(self, result, metric_name, metric_namespace, eval_name):
         self.tracker.log_metric_data(metric_namespace, metric_name, [Metric(eval_name, result)])
+        self.tracker.set_metric_meta(metric_namespace, metric_name,
+                                     MetricMeta(name=metric_name, metric_type="EVALUATION_SUMMARY"))
 
     def __filter(self, x_list, filter_num):
         x_size = len(x_list)
@@ -197,14 +226,18 @@ class Evaluation(ModelBase):
         for (data_type, eval_res) in self.eval_results.items():
             precision_recall = {}
             for (metric, metric_res) in eval_res.items():
-                metric_name = '_'.join([data_type, metric])
                 metric_namespace = metric_res[0]
 
                 if metric in self.save_single_value_metric_list:
-                    self.__save_single_value(metric_res[1], metric_name, metric_namespace, metric)
+                    self.__save_single_value(metric_res[1], metric_name=data_type, metric_namespace=metric_namespace,
+                                             eval_name=metric)
                 elif metric in [consts.KS, consts.ROC]:
+                    metric_name = '_'.join([data_type, metric])
                     if metric == consts.KS:
-                        fpr, tpr, thresholds = metric_res[1][1:]
+                        best_ks, fpr, tpr, thresholds = metric_res[1]
+                        self.__save_single_value(best_ks, metric_name=data_type,
+                                                 metric_namespace=metric_namespace,
+                                                 eval_name=metric)
                     else:
                         fpr, tpr, thresholds = metric_res[1]
 
@@ -228,7 +261,7 @@ class Evaluation(ModelBase):
                     score, thresholds = metric_res[1]
 
                     if metric in [consts.LIFT, consts.GAIN]:
-                        score = [s[1] for s in score]
+                        score = [float(s[1]) for s in score]
 
                     index = self.__filter(thresholds, self.filter_point_num)
                     thresholds = [thresholds[i] for i in index]
@@ -403,7 +436,7 @@ class Evaluation(ModelBase):
     def roc(self, labels, pred_scores):
         if self.eval_type == consts.BINARY:
             fpr, tpr, thresholds = roc_curve(np.array(labels), np.array(pred_scores), drop_intermediate=0)
-            fpr, tpr, thresholds = list(fpr), list(tpr), list(thresholds)
+            fpr, tpr, thresholds = list(map(float,fpr)), list(map(float, tpr)), list(map(float,thresholds))
         else:
             logging.warning("roc_curve is just suppose Binary Classification! return None as results")
             fpr, tpr, thresholds = None, None, None
@@ -428,7 +461,7 @@ class Evaluation(ModelBase):
         thresholds = None
         if self.eval_type == consts.BINARY:
             fpr, tpr, thresholds = self.roc(labels, pred_scores)
-            max_ks_interval = max(np.array(tpr) - np.array(fpr))
+            max_ks_interval = float(max(np.array(tpr) - np.array(fpr)))
         else:
             logging.warning("ks is just suppose Binary Classification! return None as results")
 
@@ -683,7 +716,7 @@ class BiClassPrecision(object):
         scores = []
         for threshold in thresholds:
             pred_scores_one_hot = self.__predict_value_to_one_hot(pred_scores, threshold)
-            score = list(precision_score(labels, pred_scores_one_hot, average=None))
+            score = list(map(float,precision_score(labels, pred_scores_one_hot, average=None)))
             scores.append(score)
 
         return scores, thresholds
@@ -718,7 +751,7 @@ class BiClassRecall(object):
 
         for threshold in thresholds:
             pred_scores_one_hot = self.__predict_value_to_one_hot(pred_scores, threshold)
-            score = list(recall_score(labels, pred_scores_one_hot, average=None))
+            score = list(map(float, recall_score(labels, pred_scores_one_hot, average=None)))
             scores.append(score)
 
         return scores, thresholds

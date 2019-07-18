@@ -20,9 +20,6 @@ import random
 
 from arch.api.federation import remote, get
 from arch.api.utils import log_utils
-from fate_flow.entity.metric import Metric
-from federatedml.model_base import ModelBase
-from federatedml.param.intersect_param import IntersectParam
 from federatedml.secureprotol import gmpy_math
 from federatedml.statistic.intersect import RawIntersect
 from federatedml.statistic.intersect import RsaIntersect
@@ -161,42 +158,3 @@ class RawIntersectionGuest(RawIntersect):
             raise ValueError("Unknown intersect join role, please check the configure of guest")
 
         return intersect_ids
-
-
-class IntersectGuest(ModelBase):
-    def __init__(self):
-        super().__init__()
-        self.model_param = IntersectParam()
-        self.intersect_num = -1
-        self.intersect_rate = -1
-        self.intersect_ids = None
-
-    def fit(self, data):
-        if self.model_param.intersect_method == "rsa":
-            LOGGER.info("Using rsa intersection")
-            intersection_obj = RsaIntersectionGuest(self.model_param)
-        elif self.model_param.intersect_method == "raw":
-            LOGGER.info("Using raw intersection")
-            intersection_obj = RawIntersectionGuest(self.model_param)
-        else:
-            raise TypeError("intersect_method {} is not support yet".format(self.model_param.intersect_method))
-
-        self.intersect_ids = intersection_obj.run(data)
-        LOGGER.info("Save intersect results")
-
-        if self.intersect_ids:
-            self.intersect_num = self.intersect_ids.count()
-            self.intersect_rate = self.intersect_num * 1.0 / data.count()
-        
-        self.callback_metric(metric_name="intersection",
-                             metric_namespace='train',
-                             metric_data=[Metric("intersect_count", self.intersect_num),
-                                          Metric("intersect_rate", self.intersect_rate)])
-        #read_metric_res = self.tracker.read_metric_data(metric_name="intersection",metric_namespace='train')
-
-        #for metric_point in read_metric_res:
-        #    LOGGER.debug("metric.key={}, metric.value={}".format(metric_point.key, metric_point.value))
-
-
-    def save_data(self):
-        return self.intersect_ids

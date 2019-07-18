@@ -6,11 +6,11 @@
     {
         "guest":
         {
-            "program": "intersect_guest.py/IntersectGuest"
+            "program": "intersect_model.py/IntersectGuest"
         },
         "host":
         {
-            "program": "intersect_host.py/IntersectHost"
+            "program": "intersect_model.py/IntersectHost"
         }
     }
 }

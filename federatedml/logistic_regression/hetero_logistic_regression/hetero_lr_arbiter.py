@@ -53,10 +53,16 @@ class HeteroLRArbiter(HeteroLRBase):
         pass
 
     def run(self, component_parameters=None, args=None):
-        self._init_runtime_parameters(component_parameters)
+        need_cv = self._init_runtime_parameters(component_parameters)
+
+        if need_cv:
+            LOGGER.info("Task is cross validation.")
+            self.cross_validation(None)
+            return 
 
         if not "model" in args:
             LOGGER.info("Task is fit")
+            self.set_flowid('train')
             self.fit()
         else:
             LOGGER.info("Task is transform")

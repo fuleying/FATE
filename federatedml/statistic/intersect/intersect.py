@@ -18,8 +18,6 @@ from arch.api.federation import remote, get
 from arch.api.utils import log_utils
 from federatedml.secureprotol.encode import Encode
 from federatedml.util import consts
-#from federatedml.util import IntersectParamChecker
-#from federatedml.util.transfer_variable import RawIntersectTransferVariable
 from federatedml.util.transfer_variable.raw_intersect_transfer_variable import RawIntersectTransferVariable
 
 LOGGER = log_utils.getLogger()
@@ -29,7 +27,6 @@ class Intersect(object):
     def __init__(self, intersect_params):
         self.transfer_variable = None
         self.only_output_key = intersect_params.only_output_key
-        #IntersectParamChecker.check_param(intersect_params)
 
     def run(self, data_instances):
         raise NotImplementedError("method init must be define")
