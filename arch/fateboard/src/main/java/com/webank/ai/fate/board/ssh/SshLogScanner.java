@@ -78,9 +78,9 @@ public class SshLogScanner implements Runnable, LogScanner {
             String ip = sshInfo.getIp();
             Channel channel = null;
             InputStream inputStream = null;
-            String cmd = logFileService.buildCommand(beginLine, filePath);
-            while (webSocketSession.isOpen() && !needStop) {
 
+            while (webSocketSession.isOpen() && !needStop) {
+                String cmd = logFileService.buildCommand(beginLine, filePath);
                 try {
                     channel = logFileService.getRemoteLogStream(sshInfo, cmd);
                     inputStream = channel.getInputStream();

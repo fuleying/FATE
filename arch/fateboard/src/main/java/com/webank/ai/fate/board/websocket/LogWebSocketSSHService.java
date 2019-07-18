@@ -117,7 +117,8 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
              String localIp  = GetSystemInfo.getLocalIp();
 
              if(localIp.equals(jobTaskInfo.ip)||"0.0.0.0".equals(jobTaskInfo.ip)){
-                 logger.error("local log file {} not exist",filePath);
+                 logger.error("local ip :{} job ip:{} log file {} not exist",localIp,jobTaskInfo.ip,filePath);
+
                  return ;
              }
 

@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
+import javax.xml.bind.ValidationException;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -136,7 +137,9 @@ public class LogFileService {
             InputStream in = wcChannel.getInputStream();
              reader = new BufferedReader(new InputStreamReader(in));
              lineString = reader.readLine();
-            }finally{
+            }
+
+            finally{
             if(wcChannel!=null) {
                 wcChannel.disconnect();
             }
@@ -144,9 +147,21 @@ public class LogFileService {
                 reader.close();
             }
         }
-        Preconditions.checkArgument(lineString == null, "file " + logFilePath + "is not exist in " + sshInfo.getIp());
+        Preconditions.checkArgument(lineString != null, "file " + logFilePath + "is not exist in " + sshInfo.getIp());
 
         return new Integer(lineString);
+
+    }
+
+
+    public void checkSshInfo(String ip) throws Exception {
+
+        SshInfo sshInfo = this.sshService.getSSHInfo(ip);
+        if(sshInfo==null){
+            String sshConfigFilePath = System.getProperty(Dict.SSH_CONFIG_FILE);
+            throw  new  Exception("ip "+ip+"ssh info is wrong, the path of ssh config file is"+sshConfigFilePath);
+
+        }
 
     }
 

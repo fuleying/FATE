@@ -34,6 +34,9 @@ public class SshService implements InitializingBean {
     }
 
 
+    private  String  pubKeyPath="";
+
+
     public void load(InputStream inputStream) throws IOException {
 
         Properties properties = new Properties();
@@ -110,7 +113,10 @@ public class SshService implements InitializingBean {
     }
 
     public Session connect(SshInfo sshInfo) throws Exception {
+
         Preconditions.checkArgument(sshInfo != null, "sshInfo is null");
+
+        String currentUser = System.getProperty("user.name");
 
         return this.connect(sshInfo.getUser(), sshInfo.getPassword(), sshInfo.getIp(), new Integer(sshInfo.getPort()));
 
@@ -130,10 +136,17 @@ public class SshService implements InitializingBean {
             return session;
         } else {
             JSch jsch = new JSch();
+
+
+
+
             session = jsch.getSession(user, host, port);
             if (session == null) {
                 throw new Exception("session is null");
             }
+
+           // jsch.addIdentity(pubKeyPath);
+
             session.setPassword(passwd);
             java.util.Properties config = new java.util.Properties();
             config.put("StrictHostKeyChecking", "no");

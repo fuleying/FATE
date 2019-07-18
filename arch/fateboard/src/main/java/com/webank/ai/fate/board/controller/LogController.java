@@ -10,6 +10,7 @@ import com.webank.ai.fate.board.global.ResponseResult;
 import com.webank.ai.fate.board.log.LogFileService;
 import com.webank.ai.fate.board.pojo.SshInfo;
 import com.webank.ai.fate.board.ssh.SshService;
+import com.webank.ai.fate.board.utils.Dict;
 import com.webank.ai.fate.board.utils.GetSystemInfo;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 
 import javax.servlet.http.HttpSession;
+import javax.xml.bind.ValidationException;
 import java.io.*;
 import java.util.List;
 import java.util.Map;
@@ -87,9 +89,15 @@ public class LogController {
             if(localIp.equals(ip)||"0.0.0.0".equals(ip)||"127.0.0.1".equals(ip)) {
               return  responseResult;
             }
+            logFileService.checkSshInfo(ip);
             SshInfo sshInfo = this.sshService.getSSHInfo(ip);
-            Integer  count = logFileService.getRemoteFileLineCount(sshInfo,filePath);
-            responseResult.setData(count);
+            try {
+                Integer count = logFileService.getRemoteFileLineCount(sshInfo, filePath);
+                responseResult.setData(count);
+            }catch(Exception e){
+                responseResult.setData(0);
+              //  logger.error("getRemoteFileLineCount filePath {} error");
+            }
         }
         return responseResult;
     }
@@ -166,7 +174,14 @@ public class LogController {
 
             String ip = logFileService.getJobTaskInfo(jobId, componentId,role,partyId).ip;
 
-            Preconditions.checkArgument(ip != null && !ip.equals(""));
+             logFileService.checkSshInfo(ip);
+
+           // Preconditions.checkArgument(ip != null && !ip.equals(""));
+
+            if(StringUtils.isEmpty(ip))
+                return null;
+
+
 
             List<Map> logs = logFileService.getRemoteLogWithFixSize(jobId, componentId, type,role,partyId, begin, end - begin + 1);
 
