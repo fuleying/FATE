@@ -58,10 +58,11 @@ class HeteroLRArbiter(HeteroLRBase):
         if need_cv:
             LOGGER.info("Task is cross validation.")
             self.cross_validation(None)
-            return
+            return 
 
         if not "model" in args:
             LOGGER.info("Task is fit")
+            self.set_flowid('train')
             self.fit()
         else:
             LOGGER.info("Task is transform")

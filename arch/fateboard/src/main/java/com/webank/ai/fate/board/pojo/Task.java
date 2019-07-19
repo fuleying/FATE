@@ -1,5 +1,7 @@
 package com.webank.ai.fate.board.pojo;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Task {
     private String fTaskId;
 
@@ -20,7 +22,7 @@ public class Task {
     private Long fUpdateTime;
 
     private Long fStartTime;
-
+    @JsonProperty(defaultValue = "" )
     private Long fEndTime;
 
     private Long fElapsed;

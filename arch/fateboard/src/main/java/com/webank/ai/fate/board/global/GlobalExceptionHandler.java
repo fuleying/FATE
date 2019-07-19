@@ -35,17 +35,17 @@ public class GlobalExceptionHandler {
 
             response.setCode(ErrorCode.PARAM_ERROR.getCode());
             response.setMsg(e.getMessage());
-            logger.error("error {}", e.getMessage());
+            logger.error("error {}", e);
         } else if (e instanceof IllegalArgumentException) {
-            logger.error("error {}", e.getMessage());
+            logger.error("error {}", e);
             response.setCode(ErrorCode.SYSTEM_ERROR.getCode());
             response.setMsg(e.getMessage());
         } else if (e instanceof SQLIntegrityConstraintViolationException) {
-            logger.error("error {}", e.getMessage());
+            logger.error("error {}", e);
             response.setCode(ErrorCode.SYSTEM_ERROR.getCode());
             response.setMsg(e.getMessage());
         }  else {
-            logger.error("error {}", e);
+            logger.error("error ", e);
             response.setCode(ErrorCode.SYSTEM_ERROR.getCode());
             response.setMsg(e.getMessage());
         }

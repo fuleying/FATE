@@ -95,7 +95,7 @@
   </sql>
 <!--    分页-->
     <select id="selectByPage" resultMap="ResultMapWithBLOBs">
-        select * from t_job order by f_start_time desc limit #{startIndex},#{pageSize};
+        select * from t_job  ORDER  BY  f_create_time  desc limit #{startIndex},#{pageSize}
     </select>
 
 

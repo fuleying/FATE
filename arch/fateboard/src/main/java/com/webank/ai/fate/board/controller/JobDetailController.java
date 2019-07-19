@@ -115,6 +115,7 @@ public class JobDetailController {
         Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName));
         jsonObject.put(Dict.PARTY_ID,new Integer(partyId));
         String result = httpClientPool.post(fateUrl + Dict.URL_COPONENT_PARAMETERS, jsonObject.toJSONString());
+        Preconditions.checkArgument(result!=null);
 
         return  ResponseUtil.buildResponse(result,Dict.DATA);
 
@@ -139,7 +140,9 @@ public class JobDetailController {
         Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId));
         jsonObject.put(Dict.PARTY_ID,new Integer(partyId));
         String result = httpClientPool.post(fateUrl + Dict.URL_DAG_DEPENDENCY, jsonObject);
+        Preconditions.checkArgument(result!=null);
         JSONObject resultObject = JSON.parseObject(result);
+
         Integer retcode = resultObject.getInteger(Dict.RETCODE);
 
         if (retcode == 0) {

@@ -16,6 +16,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+import copy
+
 from arch.api.utils.log_utils import getLogger
 from federatedml.param.base_param import BaseParam
 from federatedml.util import consts
@@ -63,7 +65,7 @@ class EncodeParam(BaseParam):
         return True
 
 
-class IntersectParam(object):
+class IntersectParam(BaseParam):
     """
     Define the intersect method
 
@@ -93,6 +95,7 @@ class IntersectParam(object):
     def __init__(self, intersect_method=consts.RAW, random_bit=128, is_send_intersect_ids=True,
                  is_get_intersect_ids=True, join_role="guest", with_encode=False, encode_params=EncodeParam(),
                  only_output_key=False):
+        super().__init__()
         self.intersect_method = intersect_method
         self.random_bit = random_bit
         self.is_send_intersect_ids = is_send_intersect_ids
@@ -102,7 +105,7 @@ class IntersectParam(object):
         self.encode_params = copy.deepcopy(encode_params)
         self.only_output_key = only_output_key
 
-    def check_param(self):
+    def check(self):
         descr = "intersect param's"
 
         self.intersect_method = self.check_and_change_lower(self.intersect_method,

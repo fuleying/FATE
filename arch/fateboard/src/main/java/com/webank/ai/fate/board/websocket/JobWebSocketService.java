@@ -14,6 +14,7 @@ import com.webank.ai.fate.board.pojo.Job;
 import com.webank.ai.fate.board.services.JobManagerService;
 import com.webank.ai.fate.board.utils.Dict;
 import com.webank.ai.fate.board.utils.HttpClientPool;
+import com.webank.ai.fate.board.utils.ThreadPoolTaskExecutorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -123,11 +124,12 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
             jobMaps.put(jobKey, sessions);
 
         });
-        if (logger.isDebugEnabled()) {
-            logger.debug("job maps {}", jobMaps);
+//        if (logger.isDebugEnabled()) {
+//            logger.debug("job maps {}", jobMaps);
+//        }
+        if(jobMaps.size()>0) {
+            logger.info("job websocket job size {}",jobMaps.size());
         }
-
-
         jobMaps.forEach((k, v) -> {
 
 
@@ -167,24 +169,33 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
                         param.put(Dict.ROLE,role);
                         param.put(Dict.PARTY_ID,partyId);
 
-                        Future<?>   dependencyFuture= asyncServiceExecutor.submit(()->{
-
+                        Future<?>   dependencyFuture= ThreadPoolTaskExecutorUtil.submitListenable(asyncServiceExecutor,()->{
                             ResponseResult  responseResult = jobDetailController.getDagDependencies(JSON.toJSONString(param));
 
 
                             return  responseResult;
-                        });
-                        Future<?> dataViewFuture = asyncServiceExecutor.submit(() -> {
+                        },new int[]{500},new int[]{3}) ;
 
-                            ResponseResult  responseResult = jobManagerController.queryJobDataset(JSON.toJSONString(param));
+//                        Future<?> dataViewFuture = ThreadPoolTaskExecutorUtil.submitListenable(asyncServiceExecutor,() -> {
+//
+//                            ResponseResult  responseResult = jobManagerController.queryJobDataset(JSON.toJSONString(param));
+//
+//                            return responseResult;
+//                        },new int[]{500},new int[]{3});
 
-                            return responseResult;
-                        });
+
+
 
                         try {
-                            flushToWebData.put(Dict.DEPENDENCY_DATA, dependencyFuture.get());
 
-                            flushToWebData.put(Dict.DATAVIEW_DATA, dataViewFuture.get());
+                            try {
+                                flushToWebData.put(Dict.DEPENDENCY_DATA, dependencyFuture.get());
+                            }catch(Exception  e){
+                                logger.error("DEPENDENCY_DATA ERROR",e);
+                            }
+
+
+//                            flushToWebData.put(Dict.DATAVIEW_DATA, dataViewFuture.get());
 
                         }catch(Exception e){
 

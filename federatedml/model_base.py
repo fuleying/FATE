@@ -92,9 +92,6 @@ class ModelBase(object):
 
             if self.data_output:
                 self.data_output = self.data_output.mapValues(lambda value: value + ["train"])
-                for data in list(self.data_output.collect()):
-                    LOGGER.debug("[0]id:{},value:{}".format(data[0], data[1]))
-                    break
 
             if eval_data:
                 self.set_flowid('validate')
@@ -104,20 +101,11 @@ class ModelBase(object):
                     eval_data_output = eval_data_output.mapValues(lambda value: value + ["validation"])
 
                 if self.data_output and eval_data_output:
-                    for data in list(self.data_output.collect()):
-                        LOGGER.debug("[1]id:{},value:{}".format(data[0], data[1]))
-                        break
-                    for data in list(eval_data_output.collect()):
-                        LOGGER.debug("[3]id:{},value:{}".format(data[0], data[1]))
-                        break
                     self.data_output.union(eval_data_output)
                 elif self.data_output and eval_data_output:
                     self.data_output = eval_data_output
 
-                    for data in list(self.data_output.collect()):
-                        LOGGER.debug("[2]id:{},value:{}".format(data[0], data[1]))
-                        break
-            self.set_predict_data_schema(self.data_output, train_data.schema)
+            self.set_predict_data_schema(self.data_output)
         
         elif eval_data:
             self.data_output = self.predict(eval_data)
@@ -134,7 +122,7 @@ class ModelBase(object):
                 self.data_output = self.transform(data)
 
         if self.data_output:
-            #LOGGER.debug("data is {}".format(self.data_output.first()[1].features))
+            # LOGGER.debug("data is {}".format(self.data_output.first()[1].features))
 
             LOGGER.debug("In model base, data_output schema: {}".format(self.data_output.schema))
 
