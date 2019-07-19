@@ -40,34 +40,13 @@ class EvaluateParam(BaseParam):
     thresholds: A list of threshold. Specify the threshold use to separate positive and negative class. for example [0.1, 0.3,0.5], this parameter effective only for 'binary'
     """
 
-    def __init__(self, metrics=None, eval_type="binary", pos_label=1, thresholds=None):
-        if metrics is None:
-            metrics = []
-        self.metrics = metrics
+    def __init__(self, eval_type="binary", pos_label=1):
+        super().__init__()
         self.eval_type = eval_type
         self.pos_label = pos_label
-        self.thresholds = thresholds
 
     def check(self):
-        if type(self.metrics).__name__ != "list":
-            raise ValueError("evaluate param's metrics {} not supported, should be list".format(evaluate_param.metrics))
-        else:
-            descr = "evaluate param's metrics"
-            for idx, metric in enumerate(self.metrics):
-                self.metrics[idx] = self.check_and_change_lower(metric,
-                                                                [consts.AUC, consts.KS, consts.LIFT,
-                                                                 consts.PRECISION, consts.RECALL, consts.ACCURACY,
-                                                                 consts.EXPLAINED_VARIANCE,
-                                                                 consts.MEAN_ABSOLUTE_ERROR,
-                                                                 consts.MEAN_SQUARED_ERROR,
-                                                                 consts.MEAN_SQUARED_LOG_ERROR,
-                                                                 consts.MEDIAN_ABSOLUTE_ERROR,
-                                                                 consts.R2_SCORE, consts.ROOT_MEAN_SQUARED_ERROR,
-                                                                 consts.ROC,
-                                                                 consts.GAIN],
-                                                                descr)
         descr = "evaluate param's "
-
         self.eval_type = self.check_and_change_lower(self.eval_type,
                                                        [consts.BINARY, consts.MULTY, consts.REGRESSION],
                                                        descr)
@@ -77,16 +56,5 @@ class EvaluateParam(BaseParam):
                 "evaluate param's pos_label {} not supported, should be str or float or int type".format(
                     self.pos_label))
 
-        if self.thresholds is not None:
-            if type(self.thresholds).__name__ != "list":
-                raise ValueError(
-                    "evaluate param's thresholds {} not supported, should be list".format(self.thresholds))
-            else:
-                for threshold in self.thresholds:
-                    if type(threshold).__name__ not in ["float", "int"]:
-                        raise ValueError(
-                            "threshold {} in evaluate param's thresholds not supported, should be positive integer".format(
-                                threshold))
-
-        LOGGER.debug("Finish evaluation parameter check!")
+        LOGGER.info("Finish evaluation parameter check!")
         return True

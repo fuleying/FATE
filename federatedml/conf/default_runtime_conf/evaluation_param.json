@@ -1,6 +1,4 @@
 {
-    "metrics": ["auc", "precision"],
-    "classi_type": "binary",
-    "pos_label": 1,
-    "predict_threshold": [0.5]
+    "eval_type": "binary",
+    "pos_label": 1
 }
