@@ -105,9 +105,11 @@ public class Configuration {
         return properties;
     }
 
-    public static Properties  (String confName) {
+    public static Properties getAdapterProperties(String confName) {
         return adapterPropertiesMapPool.get(confName);
     }
+
+
 
     public static JSONObject getAdapterJsonConfig(String confName) {
         return adapterJsonConfigMapPool.get(confName);
