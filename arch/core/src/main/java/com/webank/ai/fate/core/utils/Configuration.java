@@ -105,7 +105,7 @@ public class Configuration {
         return properties;
     }
 
-    public static Properties getAdapterProperties(String confName) {
+    public static Properties  (String confName) {
         return adapterPropertiesMapPool.get(confName);
     }
 
