@@ -134,7 +134,7 @@ class ModelBase(object):
                 self.data_output = self.transform(data)
 
         if self.data_output:
-            LOGGER.debug("data is {}".format(self.data_output.first()[1].features))
+            #LOGGER.debug("data is {}".format(self.data_output.first()[1].features))
 
             LOGGER.debug("In model base, data_output schema: {}".format(self.data_output.schema))
 
@@ -182,6 +182,7 @@ class ModelBase(object):
     def set_flowid(self, flowid):
         # self.flowid = '_'.join(map(str, [self.flowid, flowid]))
         self.flowid = '.'.join([self.taskid, str(flowid)])
+        self.set_transfer_variable()
 
     def set_transfer_variable(self):
         if self.transfer_variable is not None:

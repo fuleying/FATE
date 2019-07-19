@@ -35,6 +35,10 @@ class HeteroFeatureSelectionGuest(BaseHeteroFeatureSelection):
         self.party_name = consts.GUEST
 
     def fit(self, data_instances):
+
+        one_data = data_instances.first()
+        LOGGER.debug("When input in feature selection, data features: {}".format(one_data[1].features))
+
         self._abnormal_detection(data_instances)
         self._init_cols(data_instances)
 
@@ -171,7 +175,7 @@ class HeteroFeatureSelectionGuest(BaseHeteroFeatureSelection):
             outlier_filter = feature_selection.OutlierFilter(outlier_param, self.cols)
             new_left_cols = outlier_filter.fit(data_instances)
             self._renew_final_left_cols(new_left_cols)
-
+            LOGGER.debug("In outlier_cols")
             self.outlier_meta = outlier_filter.get_meta_obj()
             self.results.append(outlier_filter.get_param_obj())
             # self._renew_left_col_names()

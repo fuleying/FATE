@@ -20,12 +20,13 @@
 import math
 import operator
 import random
+
 from google.protobuf import json_format
 
 from arch.api.proto import feature_selection_meta_pb2
 from arch.api.proto import feature_selection_param_pb2
 from arch.api.utils import log_utils
-from federatedml.param.param import FeatureBinningParam, UniqueValueParam
+from federatedml.param.param import UniqueValueParam
 from federatedml.statistic.data_overview import get_header
 from federatedml.statistic.statics import MultivariateStatisticalSummary
 from federatedml.util import consts
@@ -257,7 +258,8 @@ class UnionPercentileFilter(FilterMethod):
 
         sorted_value = sorted(total_values, reverse=self.pick_high)
         thres_idx = int(math.floor(self.percentiles * len(sorted_value) - consts.FLOAT_ZERO))
-        LOGGER.debug("sorted_value: {}, thres_idx: {}, len_sort_value: {}".format(sorted_value, thres_idx, len(sorted_value)))
+        LOGGER.debug(
+            "sorted_value: {}, thres_idx: {}, len_sort_value: {}".format(sorted_value, thres_idx, len(sorted_value)))
         self.value_threshold = sorted_value[thres_idx]
 
 
@@ -380,7 +382,7 @@ class IVValueSelectFilter(FilterMethod):
         host_obj = {}
         LOGGER.debug("In get_param_obj, host_cols: {}".format(self.host_cols))
         for host_name, host_left_cols in self.host_cols.items():
-            host_cols = list(str(host_left_cols.keys()))
+            host_cols = list(map(str, host_left_cols.keys()))
 
             # new_host_left_cols = {}
             # for k, v in host_left_cols.items():

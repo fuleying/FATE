@@ -49,6 +49,9 @@ class OneHotEncoder(ModelBase):
     def fit(self, data_instances):
         self._init_cols(data_instances)
 
+        one_data = data_instances.first()[1]
+        LOGGER.debug("Input of onehot, data is : {}, header: {}, cols: {}".format(one_data.features, self.header, self.cols))
+
         f1 = functools.partial(self.record_new_header,
                                cols=self.cols,
                                header=self.header)
@@ -142,7 +145,7 @@ class OneHotEncoder(ModelBase):
                 this_col_map = col_maps.get(col_name)
                 col_index = header.index(col_name)
                 feature_value = feature[col_index]
-                feature_value = str(feature_value)
+                # feature_value = str(feature_value)
                 if feature_value not in this_col_map:
                     new_feature_header = str(col_name) + '_' + str(feature_value)
                     this_col_map[feature_value] = new_feature_header
@@ -186,6 +189,8 @@ class OneHotEncoder(ModelBase):
         for col_name, value_dict in col_maps.items():
             feature_value = str(feature_dict.get(col_name))
             header_name = value_dict.get(feature_value)
+            if header_name is not None:
+                continue
             feature_dict[header_name] = 1
 
         feature_array = []
@@ -207,7 +212,16 @@ class OneHotEncoder(ModelBase):
     def _get_param(self):
         pb_dict = {}
         for col_name, value_dict in self.col_maps.items():
-            value_dict_obj = onehot_param_pb2.ColDict(encode_map=value_dict)
+            values = list(value_dict.keys())
+            data_type = type(values[0]).__name__
+            encoded_variables = []
+            for v in values:
+                encoded_variables.append(value_dict[v])
+            values = [str(x) for x in values]
+
+            value_dict_obj = onehot_param_pb2.ColsMap(values=values,
+                                                      encoded_variables=encoded_variables,
+                                                      data_type=data_type)
             pb_dict[col_name] = value_dict_obj
 
         result_obj = onehot_param_pb2.OneHotParam(col_map=pb_dict)
@@ -227,6 +241,12 @@ class OneHotEncoder(ModelBase):
         model_param = list(model_dict.get('model').values())[0].get(MODEL_PARAM_NAME)
         # model_meta = model_dict.get(MODEL_NAME).get(MODEL_META_NAME)
 
-        self.col_maps = dict(model_param.col_map)
-        for k, v in self.col_maps.items():
-            self.col_maps[k] = dict(v.encode_map)
+        col_maps = dict(model_param.col_map)
+        self.col_maps = {}
+        for k, v in col_maps.items():
+            values = model_param.values
+            encoded_variables = model_param.encoded_variables
+            data_type = model_param.data_type
+            values = map(eval(data_type), values)
+            one_feature_col_map = dict(zip(values, encoded_variables))
+            self.col_maps[k] = one_feature_col_map

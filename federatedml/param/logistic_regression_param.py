@@ -43,10 +43,12 @@ class InitParam(BaseParam):
 
     """
 
-    def __init__(self, init_method='random_uniform', init_const=1, fit_intercept=True):
+    def __init__(self, init_method='random_uniform', init_const=1, fit_intercept=True, random_seed=None):
+        super().__init__()
         self.init_method = init_method
         self.init_const = init_const
         self.fit_intercept = fit_intercept
+        self.random_seed = random_seed
 
     def check(self):
         if type(self.init_method).__name__ != "str":
@@ -66,6 +68,11 @@ class InitParam(BaseParam):
         if type(self.fit_intercept).__name__ != 'bool':
             raise ValueError(
                 "Init param's fit_intercept {} not supported, should be bool type".format(self.fit_intercept))
+
+        if self.random_seed is not None:
+            if type(self.random_seed).__name__ not in ['int', 'float']:
+                raise ValueError(
+                    "Init param's random_seed {} not supported, should be int or float type".format(self.random_seed))
 
         return True
 

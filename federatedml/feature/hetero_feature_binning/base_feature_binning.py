@@ -98,6 +98,7 @@ class BaseHeteroFeatureBinning(ModelBase):
 
         self.set_schema(data_instances)
         self.data_output = data_instances
+
         return data_instances
 
     def _get_meta(self):
