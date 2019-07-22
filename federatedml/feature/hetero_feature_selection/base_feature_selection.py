@@ -113,7 +113,9 @@ class BaseHeteroFeatureSelection(ModelBase):
         return self.data_output
 
     def export_model(self):
+        LOGGER.debug("Model output is : {}".format(self.model_output))
         if self.model_output is not None:
+            LOGGER.debug("Model output is : {}".format(self.model_output))
             return self.model_output
 
         meta_obj = self._get_meta()
@@ -139,7 +141,7 @@ class BaseHeteroFeatureSelection(ModelBase):
                 MODEL_META_NAME: model_meta,
                 MODEL_PARAM_NAME: model_param
             }
-
+            LOGGER.debug("Model output set, model_output is :{}".format(self.model_output))
             self.results = list(model_param.results)
             left_col_obj = model_param.final_left_cols
 

@@ -185,7 +185,7 @@ class BaseHeteroFeatureBinning(ModelBase):
     def export_model(self):
         if self.model_output is not None:
             return self.model_output
-        
+
         meta_obj = self._get_meta()
         param_obj = self._get_param()
         result = {
