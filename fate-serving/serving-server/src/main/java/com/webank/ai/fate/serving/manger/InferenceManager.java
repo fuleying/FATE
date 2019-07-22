@@ -185,6 +185,9 @@ public class InferenceManager {
         } else {
             LOGGER.info("case {} failed inference, retcode is {}, use {} ms.", inferenceRequest.getCaseid(), inferenceResult.getRetcode(), inferenceElapsed);
         }
+        LOGGER.info("ppppppppppppppppppppppppppppppppppppppppp {}", inferenceResult.getData());
+
+
         return inferenceResult;
     }
 
