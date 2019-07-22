@@ -1,6 +1,7 @@
 package com.webank.ai.fate.serving.adapter.processing;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webank.ai.fate.core.bean.ReturnResult;
 import com.webank.ai.fate.core.utils.Configuration;
 import com.webank.ai.fate.serving.bean.PostProcessingResult;
@@ -10,6 +11,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.text.ParseException;
@@ -291,6 +293,8 @@ public class EHiPostProcessing implements PostProcessing {
 
     }
 
+
+    ObjectMapper   mapper =   new ObjectMapper();
     private Map success_price_result(Map<String, Object> product_price_info, Map<String, Object> loginfo,
                                         JSONObject warninfo) {
 
@@ -302,9 +306,14 @@ public class EHiPostProcessing implements PostProcessing {
         ret.put("log", loginfo);
         if (warninfo!=null&&(Boolean) warninfo.get("warnflag")) {
             warninfo.remove("warnflag");
+            try {
+                HashMap<String,String>  warnMap =  mapper.readValue(warninfo.toString(),HashMap.class);
+                ret.put("warn", warnMap);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            //Map<String, String> params = JSONObject.(warninfo.toString(), new TypeReference<Map<String, String>>(){});
 
-            Map<String, String> params = JSONObject.parseObject(warninfo.toString(), new TypeReference<Map<String, String>>(){});
-            ret.put("warn", warninfo);
         }
 
      //   String ret_string = JSONObject.valueToString(ret);
