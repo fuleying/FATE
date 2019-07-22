@@ -366,7 +366,7 @@ public class EHiPostProcessing implements PostProcessing {
     private int time_intervel_check(String order_time, JSONObject time_intervel, String pick_car_city){
         //get product discount time intervel
         int time_check ;
-        if (time_intervel.has(pick_car_city)) {
+        if (time_intervel!=null&&time_intervel.has(pick_car_city)) {
             time_intervel = time_intervel.getJSONObject(pick_car_city);
             String product_discount_start= time_intervel.getJSONObject("producta").getString("product_discount_start");
             String product_discount_end= time_intervel.getJSONObject("producta").getString("product_discount_end");
