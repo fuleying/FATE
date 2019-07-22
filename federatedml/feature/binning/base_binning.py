@@ -238,6 +238,7 @@ class Binning(object):
                 if col not in self.cols_index:
                     raise RuntimeError("Binning Transform cols: {} should be fit before transform".format(col))
 
+        transform_cols_idx = list(map(int, transform_cols_idx))
         if split_points is None:
             split_points = self.split_points
 
@@ -374,6 +375,11 @@ class Binning(object):
                                    split_points=split_points)
         self.iv_result = iv_attrs
         return iv_attrs
+
+    def reconstruct_by_iv_obj(self, col_name, iv_attr):
+        if self.split_points is None:
+            self.split_points = {}
+        self.split_points[col_name] = list(iv_attr.split_points)
 
     @staticmethod
     def bin_data(instance, split_points, cols_dict, header, is_sparse):

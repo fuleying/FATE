@@ -102,12 +102,15 @@ class BaseHeteroFeatureBinning(ModelBase):
         return data_instances
 
     def _get_meta(self):
+        col_list = [str(x) for x in self.cols]
+
         meta_protobuf_obj = feature_binning_meta_pb2.FeatureBinningMeta(
+            method=self.model_param.method,
             compress_thres=self.model_param.compress_thres,
             head_size=self.model_param.head_size,
             error=self.model_param.error,
             bin_num=self.model_param.bin_num,
-            cols=self.cols,
+            cols=col_list,
             adjustment_factor=self.model_param.adjustment_factor,
             local_only=self.model_param.local_only,
             need_run=self.need_run
@@ -145,18 +148,27 @@ class BaseHeteroFeatureBinning(ModelBase):
     def _load_model(self, model_dict):
         model_param = list(model_dict.get('model').values())[0].get(MODEL_PARAM_NAME)
         # self._parse_need_run(model_dict, MODEL_META_NAME)
+        model_meta = list(model_dict.get('model').values())[0].get(MODEL_META_NAME)
+        # model_meta.cols = list(model_meta.cols)
+        # model_meta.transform_param.transform_cols = list(model_meta.transform_param.transform_cols)
+        self.cols = list(map(int, model_meta.cols))
+        bin_method = str(model_meta.method)
+        if bin_method == consts.QUANTILE:
+            self.binning_obj = QuantileBinning(model_meta, self.party_name)
+        else:
+            self.binning_obj = BucketBinning(model_meta, self.party_name)
 
         binning_result_obj = dict(model_param.binning_result.binning_result)
         host_params = dict(model_param.host_results)
 
         self.binning_result = {}
         self.host_results = {}
-        self.cols = []
         for col_name, iv_attr_obj in binning_result_obj.items():
             iv_attr = IVAttributes([], [], [], [], [], [])
             iv_attr.reconstruct(iv_attr_obj)
+            self.binning_obj.reconstruct_by_iv_obj(col_name, iv_attr)
             self.binning_result[col_name] = iv_attr
-            self.cols.append(col_name)
+            # self.cols.append(col_name)
 
         for host_name, host_result_obj in host_params.items():
             host_result_obj = dict(host_result_obj.binning_result)
@@ -198,25 +210,25 @@ class BaseHeteroFeatureBinning(ModelBase):
         if self.cols_index == -1:
             if header is None:
                 raise RuntimeError('Cannot get feature header, please check input data')
-            self.cols = header
+            self.cols = [i for i in range(len(header))]
         else:
-            cols = []
-            for idx in self.cols_index:
-                try:
-                    idx = int(idx)
-                except ValueError:
-                    raise ValueError("In binning module, selected index: {} is not integer".format(idx))
-
-                if idx >= len(header):
-                    raise ValueError(
-                        "In binning module, selected index: {} exceed length of data dimension".format(idx))
-                cols.append(header[idx])
-            self.cols = cols
+            # cols = []
+            # for idx in self.cols_index:
+            #     try:
+            #         idx = int(idx)
+            #     except ValueError:
+            #         raise ValueError("In binning module, selected index: {} is not integer".format(idx))
+            #
+            #     if idx >= len(header):
+            #         raise ValueError(
+            #             "In binning module, selected index: {} exceed length of data dimension".format(idx))
+            #     cols.append(header[idx])
+            self.cols = self.cols_index
 
         self.cols_dict = {}
         for col in self.cols:
-            col_index = header.index(col)
-            self.cols_dict[col] = col_index
+            col_name = header[col]
+            self.cols_dict[col_name] = col
 
     def set_schema(self, data_instance):
         self.schema['header'] = self.header

@@ -152,3 +152,5 @@ class HeteroFeatureBinningGuest(BaseHeteroFeatureBinning):
         if data_instance.label != 1:
             data_instance.label = 0
         return data_instance
+
+
