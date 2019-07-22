@@ -19,7 +19,7 @@ start(){
     if [ $psid -ne 0 ]; then
         echo "already started pid=$psid"
         else
-         nohup $JAVA_HOME/bin/java   -Dspring.config.location=$configpath/application.properties  -Dssh_config_file=$routerpath  -Xmx2048m -Xms2048m -XX:+PrintGCDetails -XX:+PrintGCDateStamps -Xloggc:gc.log -XX:+HeapDumpOnOutOfMemoryError  -jar $basepath/../fateboard-0.0.1-SNAPSHOT.jar & >/dev/null 2>&1
+         nohup $JAVA_HOME/bin/java   -Dspring.config.location=$configpath/application.properties  -Dssh_config_file=$routerpath  -Xmx2048m -Xms2048m -XX:+PrintGCDetails -XX:+PrintGCDateStamps -Xloggc:gc.log -XX:+HeapDumpOnOutOfMemoryError  -jar $basepath/../fateboard-0.0.1-SNAPSHOT.jar >/dev/null 2>&1 &
          checkpid
          if [ $psid -ne 0 ];
          then  
