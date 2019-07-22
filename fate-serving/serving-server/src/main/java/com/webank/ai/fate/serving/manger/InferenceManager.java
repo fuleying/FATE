@@ -143,9 +143,14 @@ public class InferenceManager {
         predictParams.put("federatedParams", federatedParams);
 
         Map<String, Object> modelResult = model.predict(featureData, predictParams);
+        boolean getRemotePartyResult = (boolean) federatedParams.getOrDefault("getRemotePartyResult", false);
+        ReturnResult federatedResult = (ReturnResult) predictParams.get("federatedResult");
         LOGGER.info(modelResult);
         PostProcessingResult postProcessingResult;
         try {
+            if(federatedResult!=null) {
+                modelResult.put("retcode", federatedResult.getRetcode());
+            }
             postProcessingResult = getPostProcessedResult(featureData, modelResult);
         } catch (Exception ex) {
             LOGGER.error("model result postprocessing failed", ex);
@@ -155,8 +160,7 @@ public class InferenceManager {
         }
         inferenceResult = postProcessingResult.getProcessingResult();
         inferenceResult.setCaseid(inferenceRequest.getCaseid());
-        boolean getRemotePartyResult = (boolean) federatedParams.getOrDefault("getRemotePartyResult", false);
-        ReturnResult federatedResult = (ReturnResult) predictParams.get("federatedResult");
+
         boolean billing = true;
         if (! getRemotePartyResult) {
             billing = false;
