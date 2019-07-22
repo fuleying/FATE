@@ -76,7 +76,8 @@ class Evaluation(ModelBase):
             consts.GAIN,
             consts.ACCURACY,
             consts.PRECISION,
-            consts.RECALL
+            consts.RECALL,
+            consts.ROC
         ]
 
         self.multi_classification_support_func = [
@@ -85,11 +86,13 @@ class Evaluation(ModelBase):
             consts.RECALL
         ]
 
-        self.metrics = { consts.BINARY: self.binary_classification_support_func,
-                         consts.MULTY: self.multi_classification_support_func,
-                         consts.REGRESSION: self.regression_support_func}
+        self.metrics = {consts.BINARY: self.binary_classification_support_func,
+                        consts.MULTY: self.multi_classification_support_func,
+                        consts.REGRESSION: self.regression_support_func}
 
+        self.round_num = 6
         FateStorage.init_storage()
+
 
     def _init_model(self, model):
         self.model_param = model
@@ -140,7 +143,6 @@ class Evaluation(ModelBase):
             data_type = key
             mode = "eval"
             if len(eval_data_local[0][1]) >= 4:
-                LOGGER.debug("read one data:{}".format(eval_data_local[0][1]))
                 mode = eval_data_local[0][1][4]
 
             for d in eval_data_local:
@@ -164,7 +166,6 @@ class Evaluation(ModelBase):
 
             eval_result = defaultdict(list)
 
-
             try:
                 metrics = self.metrics[self.eval_type]
             except:
@@ -182,7 +183,7 @@ class Evaluation(ModelBase):
             self.eval_results[data_type] = eval_result
 
     def __save_single_value(self, result, metric_name, metric_namespace, eval_name):
-        self.tracker.log_metric_data(metric_namespace, metric_name, [Metric(eval_name, result)])
+        self.tracker.log_metric_data(metric_namespace, metric_name, [Metric(eval_name, np.round(result, self.round_num))])
         self.tracker.set_metric_meta(metric_namespace, metric_name,
                                      MetricMeta(name=metric_name, metric_type="EVALUATION_SUMMARY"))
 
@@ -198,16 +199,13 @@ class Evaluation(ModelBase):
     def __save_curve_data(self, x_axis_list, y_axis_list, metric_name, metric_namespace):
         points = []
         for i, value in enumerate(x_axis_list):
-            points.append((value, y_axis_list[i]))
+            if isinstance(value, float):
+                value = np.round(value, self.round_num)
+            points.append((value, np.round(y_axis_list[i], self.round_num)))
         points.sort(key=lambda x: x[0])
 
         metric_points = [Metric(point[0], point[1]) for point in points]
         self.tracker.log_metric_data(metric_namespace, metric_name, metric_points)
-        LOGGER.debug(
-            "read metric data, metric_namespace:{}, metric_name:{}, metric:{}".format(metric_namespace, metric_name,
-                                                                                      self.tracker.read_metric_data(
-                                                                                          metric_namespace,
-                                                                                          metric_name)))
 
     def __save_curve_meta(self, metric_name, metric_namespace, metric_type, unit_name=None, ordinate_name=None,
                           curve_name=None, best=None, pair_type=None):
@@ -223,24 +221,33 @@ class Evaluation(ModelBase):
         self.tracker.set_metric_meta(metric_namespace, metric_name,
                                      MetricMeta(name=metric_name, metric_type=metric_type, extra_metas=extra_metas))
 
+    def __save_roc(self, data_type, metric_name, metric_namespace, metric_res):
+        fpr, tpr, thresholds = metric_res
+        index = self.__filter(thresholds, self.filter_point_num)
+        # thresholds = [thresholds[i] for i in index]
+        fpr = [fpr[i] for i in index]
+        tpr = [tpr[i] for i in index]
+
+        self.__save_curve_data(fpr, tpr, metric_name, metric_namespace)
+        self.__save_curve_meta(metric_name=metric_name, metric_namespace=metric_namespace,
+                               metric_type="ROC", unit_name="fpr", ordinate_name="tpr",
+                               curve_name=data_type)
+
     def save_data(self):
         for (data_type, eval_res) in self.eval_results.items():
             precision_recall = {}
             for (metric, metric_res) in eval_res.items():
                 metric_namespace = metric_res[0]
+                metric_name = '_'.join([data_type, metric])
 
                 if metric in self.save_single_value_metric_list:
                     self.__save_single_value(metric_res[1], metric_name=data_type, metric_namespace=metric_namespace,
                                              eval_name=metric)
-                elif metric in [consts.KS, consts.ROC]:
-                    metric_name = '_'.join([data_type, metric])
-                    if metric == consts.KS:
-                        best_ks, fpr, tpr, thresholds = metric_res[1]
-                        self.__save_single_value(best_ks, metric_name=data_type,
-                                                 metric_namespace=metric_namespace,
-                                                 eval_name=metric)
-                    else:
-                        fpr, tpr, thresholds = metric_res[1]
+                elif metric == consts.KS:
+                    best_ks, fpr, tpr, thresholds = metric_res[1]
+                    self.__save_single_value(best_ks, metric_name=data_type,
+                                             metric_namespace=metric_namespace,
+                                             eval_name=metric)
 
                     index = self.__filter(thresholds, self.filter_point_num)
                     thresholds = [thresholds[i] for i in index]
@@ -258,7 +265,16 @@ class Evaluation(ModelBase):
                     self.__save_curve_meta(metric_name_tpr, metric_namespace, metric.upper(), unit_name="threshold",
                                            curve_name=metric_name_tpr, pair_type=data_type)
 
+                elif metric == consts.ROC:
+                    self.__save_roc(data_type, metric_name, metric_namespace, metric_res[1])
+
                 elif metric in [consts.ACCURACY, consts.LIFT, consts.GAIN]:
+                    if self.eval_type == consts.MULTY and metric == consts.ACCURACY:
+                        self.__save_single_value(metric_res[1], metric_name=data_type,
+                                                 metric_namespace=metric_namespace,
+                                                 eval_name=metric)
+                        continue
+
                     score, thresholds = metric_res[1]
 
                     if metric in [consts.LIFT, consts.GAIN]:
@@ -289,27 +305,32 @@ class Evaluation(ModelBase):
                     metric_name_precision = '_'.join([data_type, "precision"])
 
                     precision_thresholds = precision_res[1][1]
+                    pos_precision_score = precision_res[1][0]
+                    recall_thresholds = recall_res[1][1]
+                    pos_recall_score = recall_res[1][0]
 
-                    # filter if the number of precision is lager than self.filter_point_num
-                    index = self.__filter(precision_thresholds, self.filter_point_num)
-                    precision_thresholds = [precision_thresholds[i] for i in index]
-                    pos_precision_score = [score[1] for score in precision_res[1][0]]
-                    pos_precision_score = [pos_precision_score[i] for i in index]
+                    # filter if the number of precision is lager than self.filter_point_num for binary classification
+                    if self.eval_type == consts.BINARY:
+                        index = self.__filter(precision_thresholds, self.filter_point_num)
+                        precision_thresholds = [precision_thresholds[i] for i in index]
+                        pos_precision_score = [score[1] for score in pos_precision_score]
+                        pos_precision_score = [pos_precision_score[i] for i in index]
+
+
+                        recall_thresholds = [recall_thresholds[i] for i in index]
+                        pos_recall_score = [score[1] for score in pos_recall_score]
+                        pos_recall_score = [pos_recall_score[i] for i in index]
 
                     self.__save_curve_data(precision_thresholds, pos_precision_score, metric_name_precision,
                                            metric_namespace)
-                    self.__save_curve_meta(metric_name_precision, metric_namespace, consts.PRECISION.upper(),
+                    self.__save_curve_meta(metric_name_precision, metric_namespace, "_".join([consts.PRECISION.upper(), self.eval_type.upper()]),
                                            unit_name="threshold", ordinate_name="Precision", curve_name=data_type,
                                            pair_type=data_type)
 
-                    recall_thresholds = recall_res[1][1]
-                    recall_thresholds = [recall_thresholds[i] for i in index]
-                    pos_recall_score = [score[1] for score in recall_res[1][0]]
-                    pos_recall_score = [pos_recall_score[i] for i in index]
                     metric_name_recall = '_'.join([data_type, "recall"])
                     self.__save_curve_data(recall_thresholds, pos_recall_score, metric_name_recall,
                                            metric_namespace)
-                    self.__save_curve_meta(metric_name_recall, metric_namespace, consts.RECALL.upper(),
+                    self.__save_curve_meta(metric_name_recall, metric_namespace, "_".join([consts.RECALL.upper(), self.eval_type.upper()]),
                                            unit_name="threshold", ordinate_name="Recall", curve_name=data_type,
                                            pair_type=data_type)
                 else:
@@ -437,7 +458,7 @@ class Evaluation(ModelBase):
     def roc(self, labels, pred_scores):
         if self.eval_type == consts.BINARY:
             fpr, tpr, thresholds = roc_curve(np.array(labels), np.array(pred_scores), drop_intermediate=0)
-            fpr, tpr, thresholds = list(map(float,fpr)), list(map(float, tpr)), list(map(float,thresholds))
+            fpr, tpr, thresholds = list(map(float, fpr)), list(map(float, tpr)), list(map(float, thresholds))
         else:
             logging.warning("roc_curve is just suppose Binary Classification! return None as results")
             fpr, tpr, thresholds = None, None, None
@@ -546,7 +567,7 @@ class Evaluation(ModelBase):
         else:
             logging.warning("error:can not find classification type:{}".format(self.eval_type))
 
-    def recall(self, labels, pred_scores, thresholds=None, result_filter=None):
+    def recall(self, labels, pred_scores, thresholds=None):
         """
         Compute the recall
         Parameters
@@ -717,7 +738,7 @@ class BiClassPrecision(object):
         scores = []
         for threshold in thresholds:
             pred_scores_one_hot = self.__predict_value_to_one_hot(pred_scores, threshold)
-            score = list(map(float,precision_score(labels, pred_scores_one_hot, average=None)))
+            score = list(map(float, precision_score(labels, pred_scores_one_hot, average=None)))
             scores.append(score)
 
         return scores, thresholds
@@ -729,7 +750,9 @@ class MultiClassPrecision(object):
     """
 
     def compute(self, labels, pred_scores):
-        return precision_score(labels, pred_scores, average=None)
+        all_labels = list(set(labels).union(set(pred_scores)))
+        all_labels.sort()
+        return precision_score(labels, pred_scores, average=None), all_labels
 
 
 class BiClassRecall(object):
@@ -764,7 +787,9 @@ class MultiClassRecall(object):
     """
 
     def compute(self, labels, pred_scores):
-        return recall_score(labels, pred_scores, average=None)
+        all_labels = list(set(labels).union(set(pred_scores)))
+        all_labels.sort()
+        return recall_score(labels, pred_scores, average=None), all_labels
 
 
 class BiClassAccuracy(object):
