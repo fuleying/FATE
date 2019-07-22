@@ -131,6 +131,9 @@ public class EHiPostProcessing implements PostProcessing {
         result.setData(postProcessing(featureData, Double.parseDouble(modelResult.get("prob").toString()),rcode));
         result.setRetcode(rcode);
         postProcessingResult.setProcessingResult(result);
+
+
+        LOGGER.info("==============================ooooooooooooooooooooooooo{}",postProcessingResult);
         return postProcessingResult;
     }
 
