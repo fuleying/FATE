@@ -1,5 +1,6 @@
 package com.webank.ai.fate.serving.adapter.processing;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.webank.ai.fate.core.bean.ReturnResult;
 import com.webank.ai.fate.core.utils.Configuration;
 import com.webank.ai.fate.serving.bean.PostProcessingResult;
@@ -301,6 +302,8 @@ public class EHiPostProcessing implements PostProcessing {
         ret.put("log", loginfo);
         if (warninfo!=null&&(Boolean) warninfo.get("warnflag")) {
             warninfo.remove("warnflag");
+
+            Map<String, String> params = JSONObject.parseObject(warninfo.toString(), new TypeReference<Map<String, String>>(){});
             ret.put("warn", warninfo);
         }
 
