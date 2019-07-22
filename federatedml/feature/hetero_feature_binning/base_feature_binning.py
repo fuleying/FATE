@@ -92,6 +92,7 @@ class BaseHeteroFeatureBinning(ModelBase):
             raise ValueError("Binning method: {} is not supported yet".format(self.model_param.method))
 
     def transform(self, data_instances):
+        self._parse_cols(data_instances)
         transform_cols_idx = self.model_param.transform_param.transform_cols
         transform_type = self.model_param.transform_param.transform_type
         data_instances = self.binning_obj.transform(data_instances, transform_cols_idx, transform_type)
@@ -182,6 +183,9 @@ class BaseHeteroFeatureBinning(ModelBase):
         # ))
 
     def export_model(self):
+        if self.model_output is not None:
+            return self.model_output
+        
         meta_obj = self._get_meta()
         param_obj = self._get_param()
         result = {

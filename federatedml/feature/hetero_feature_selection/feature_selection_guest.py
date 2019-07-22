@@ -52,8 +52,7 @@ class HeteroFeatureSelectionGuest(BaseHeteroFeatureSelection):
 
     def transform(self, data_instances):
         self._abnormal_detection(data_instances)
-
-        # self._init_cols(data_instances)
+        self._transform_init_cols(data_instances)
         LOGGER.info("[Result][FeatureSelection][Guest]In transform, Self left cols are: {}".format(
             self.left_cols
         ))

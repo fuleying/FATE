@@ -113,6 +113,9 @@ class BaseHeteroFeatureSelection(ModelBase):
         return self.data_output
 
     def export_model(self):
+        if self.model_output is not None:
+            return self.model_output
+
         meta_obj = self._get_meta()
         param_obj = self._get_param()
         result = {
@@ -130,6 +133,12 @@ class BaseHeteroFeatureSelection(ModelBase):
             if not self.need_run:
                 return
             model_param = list(model_dict.get('model').values())[0].get(MODEL_PARAM_NAME)
+            model_meta = list(model_dict.get('model').values())[0].get(MODEL_META_NAME)
+
+            self.model_output = {
+                MODEL_META_NAME: model_meta,
+                MODEL_PARAM_NAME: model_param
+            }
 
             self.results = list(model_param.results)
             left_col_obj = model_param.final_left_cols
@@ -143,6 +152,7 @@ class BaseHeteroFeatureSelection(ModelBase):
             for col_name, is_left in left_col_name_dict.items():
                 col_idx = original_headers.index(col_name)
                 self.left_cols[col_idx] = is_left
+            LOGGER.debug("Self.left_cols: {}".format(self.left_cols))
 
         if 'isometric_model' in model_dict:
 
@@ -191,7 +201,7 @@ class BaseHeteroFeatureSelection(ModelBase):
 
         if len(self.left_cols) == 0:
             raise ValueError("None left columns for feature selection. Please check if model has fit.")
-
+        LOGGER.debug("In transfer_data, left_cols: {}, header: {}".format(self.left_cols, self.header))
         before_one_data = data_instances.first()
         f = functools.partial(self.select_cols,
                               left_cols=self.left_cols,
@@ -203,8 +213,9 @@ class BaseHeteroFeatureSelection(ModelBase):
         new_data = self.set_schema(new_data, new_header)
 
         one_data = new_data.first()[1]
-        LOGGER.debug("In feature selection transform, Before transform: {}, After transform: {}".format(
-            before_one_data[1].features, one_data.features))
+        LOGGER.debug("In feature selection transform, Before transform: {}, length: {} After transform: {}, length: {}".format(
+            before_one_data[1].features, len(before_one_data[1].features),
+            one_data.features, len(one_data.features)))
 
         return new_data
 
@@ -238,6 +249,11 @@ class BaseHeteroFeatureSelection(ModelBase):
                 left_col_list.append(col_idx)
                 self.left_cols[col_idx] = True
         self.cols = left_col_list
+
+    def _transform_init_cols(self, data_instances):
+        self.schema = data_instances.schema
+        header = get_header(data_instances)
+        self.header = header
 
     def _init_cols(self, data_instances):
         self.schema = data_instances.schema

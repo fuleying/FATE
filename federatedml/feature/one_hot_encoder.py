@@ -85,7 +85,6 @@ class OneHotEncoder(ModelBase):
         one_data = data_instances.first()[1].features
         LOGGER.debug("Before transform, data is : {}".format(one_data))
 
-
         f = functools.partial(self.transfer_one_instance,
                               col_maps=self.col_maps,
                               ori_header=ori_header,
@@ -239,6 +238,9 @@ class OneHotEncoder(ModelBase):
         return result_obj
 
     def export_model(self):
+        if self.model_output is not None:
+            return self.model_output
+
         meta_obj = self._get_meta()
         param_obj = self._get_param()
         result = {
@@ -250,7 +252,12 @@ class OneHotEncoder(ModelBase):
     def _load_model(self, model_dict):
         self._parse_need_run(model_dict, MODEL_META_NAME)
         model_param = list(model_dict.get('model').values())[0].get(MODEL_PARAM_NAME)
-        # model_meta = model_dict.get(MODEL_NAME).get(MODEL_META_NAME)
+        model_meta = list(model_dict.get('model').values())[0].get(MODEL_META_NAME)
+
+        self.model_output = {
+            MODEL_META_NAME: model_meta,
+            MODEL_PARAM_NAME: model_param
+        }
 
         col_maps = dict(model_param.col_map)
         self.col_maps = {}

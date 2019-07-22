@@ -33,8 +33,8 @@ import time
 class TestQuantileBinning(unittest.TestCase):
     def setUp(self):
         # eggroll.init("123")
-        self.data_num = 100000
-        self.feature_num = 200
+        self.data_num = 1000
+        self.feature_num = 20
         final_result = []
         numpy_array = []
         for i in range(self.data_num):
