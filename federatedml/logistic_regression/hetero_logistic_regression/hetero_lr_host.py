@@ -21,6 +21,7 @@ from arch.api.utils import log_utils
 from federatedml.logistic_regression.hetero_logistic_regression.hetero_lr_base import HeteroLRBase
 from federatedml.optim.gradient import HeteroLogisticGradient
 from federatedml.secureprotol import EncryptModeCalculator
+from federatedml.statistic.data_overview import rubbish_clear
 from federatedml.util import consts
 
 LOGGER = log_utils.getLogger()
@@ -41,14 +42,22 @@ class HeteroLRHost(HeteroLRBase):
         data_instances: DTable of Instance, input data
         coef_: list, coefficient of lr
         intercept_: float, the interception of lr
+        batch_index: int, for encrypted_calculator, each batch using a EncryptModeCalculator object
         """
         wx = self.compute_wx(data_instances, coef_, intercept_)
-
         en_wx = self.encrypted_calculator[batch_index].encrypt(wx)
         wx_square = wx.mapValues(lambda v: np.square(v))
         en_wx_square = self.encrypted_calculator[batch_index].encrypt(wx_square)
 
-        host_forward = en_wx.join(en_wx_square, lambda wx, wx_square: (wx, wx_square))
+        host_forward = en_wx.join(en_wx_square, lambda _wx, _wx_square: (_wx, _wx_square))
+
+        # temporary resource recovery and will be removed in the future
+        rubbish_list = [wx,
+                        en_wx,
+                        wx_square,
+                        en_wx_square
+                        ]
+        rubbish_clear(rubbish_list)
 
         return host_forward
 
@@ -190,11 +199,13 @@ class HeteroLRHost(HeteroLRBase):
                 training_info = {"iteration": self.n_iter_, "batch_index": batch_index}
                 self.update_local_model(fore_gradient, batch_data_inst, self.coef_, **training_info)
 
-                # is converge
-
                 batch_index += 1
-                # if is_stopped:
-                #    break
+
+                # temporary resource recovery and will be removed in the future
+                rubbish_list = [host_forward,
+                                fore_gradient
+                                ]
+                rubbish_clear(rubbish_list)
 
             is_stopped = federation.get(name=self.transfer_variable.is_stopped.name,
                                         tag=self.transfer_variable.generate_transferid(

@@ -116,11 +116,6 @@ class BaseLogisticRegression(ModelBase):
     def compute_wx(self, data_instances, coef_, intercept_=0):
         return data_instances.mapValues(lambda v: fate_operator.dot(v.features, coef_) + intercept_)
 
-    # def set_flowid(self, flowid=0):
-    #     if self.transfer_variable is not None:
-    #         self.transfer_variable.set_flowid(flowid)
-    #         LOGGER.debug("set flowid:" + str(flowid))
-
     def update_model(self, gradient):
         if self.fit_intercept:
             if self.updater is not None:
@@ -135,8 +130,8 @@ class BaseLogisticRegression(ModelBase):
             else:
                 self.coef_ = self.coef_ - gradient
 
-                # LOGGER.debug("intercept:" + str(self.intercept_))
-                # LOGGER.debug("coef:" + str(self.coef_))
+        # LOGGER.debug("intercept:" + str(self.intercept_))
+        # LOGGER.debug("coef:" + str(self.coef_))
 
     def merge_model(self):
         w = self.coef_.copy()
@@ -213,7 +208,6 @@ class BaseLogisticRegression(ModelBase):
             self.model_meta_name: meta_obj,
             self.model_param_name: param_obj
         }
-        # self.model_output = result
         return result
 
     def _load_model(self, model_dict):
