@@ -177,9 +177,9 @@ class DenseFeatureReader(object):
             #         missing_impute_rate,
             #         self.tracker)
 
-            callback("missing_value_list",
-                     self.missing_impute,
-                     self.tracker)
+            # callback("missing_value_list",
+            #           self.missing_impute,
+            #           self.tracker)
 
         return input_data_features
 
@@ -204,9 +204,9 @@ class DenseFeatureReader(object):
             #         outlier_replace_rate,
             #         self.tracker)
 
-            callback("outlier_value_list",
-                     self.outlier_impute,
-                     self.tracker)
+            # callback("outlier_value_list",
+            #          self.outlier_impute,
+            #          self.tracker)
 
         return input_data_features
 

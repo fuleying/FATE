@@ -58,7 +58,7 @@ class BaseLogisticRegression(ModelBase):
         self.role = ''
         self.mode = ''
         self.schema = {}
-        self.header = []
+        # self.header = []
 
     def _init_model(self, params):
         self.model_param = params
@@ -192,7 +192,10 @@ class BaseLogisticRegression(ModelBase):
         for idx, header_name in enumerate(header):
             coef_i = self.coef_[idx]
             weight_dict[header_name] = coef_i
-
+        LOGGER.debug("weight_dict: {}, loss_history: {}, header: {}, self.coef_: {}".format(weight_dict,
+                                                                                            self.loss_history,
+                                                                                            header,
+                                                                                            self.coef_))
         param_protobuf_obj = lr_model_param_pb2.LRModelParam(iters=self.n_iter_,
                                                              loss_history=self.loss_history,
                                                              is_converged=self.is_converged,
@@ -215,6 +218,7 @@ class BaseLogisticRegression(ModelBase):
 
     def _load_model(self, model_dict):
         # self._parse_need_run(model_dict, self.model_meta_name)
+        LOGGER.debug("In load model, model_dict: {}".format(model_dict))
         result_obj = list(model_dict.get('model').values())[0].get(self.model_param_name)
         self.header = list(result_obj.header)
         LOGGER.debug("In load model, header: {}".format(self.header))

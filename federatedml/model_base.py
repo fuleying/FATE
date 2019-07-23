@@ -170,11 +170,6 @@ class ModelBase(object):
     def set_flowid(self, flowid):
         # self.flowid = '_'.join(map(str, [self.flowid, flowid]))
         self.flowid = '.'.join([self.taskid, str(flowid)])
-
-    def set_transfer_variable(self):
-    def set_flowid(self, flowid):
-        # self.flowid = '_'.join(map(str, [self.flowid, flowid]))
-        self.flowid = '.'.join([self.taskid, str(flowid)])
         self.set_transfer_variable()
 
     def set_transfer_variable(self):
@@ -184,8 +179,6 @@ class ModelBase(object):
 
     def set_taskid(self, taskid):
         self.taskid = taskid
-        if self.transfer_variable is not None:
-            self.transfer_variable.set_taskid(self.taskid)
 
     def get_metric_name(self, name_prefix):
         if not self.need_cv:

@@ -27,6 +27,7 @@ message TransformMeta {
 
 message FeatureBinningMeta {
     bool need_run = 1;
+    string method = 10;
     int64 compress_thres = 2;
     int64 head_size = 3;
     double error = 4;

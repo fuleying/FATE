@@ -20,8 +20,8 @@ from arch.api import federation
 from arch.api.utils import log_utils
 from federatedml.feature.hetero_feature_binning.base_feature_binning import BaseHeteroFeatureBinning
 from federatedml.secureprotol import PaillierEncrypt
-from federatedml.util import consts
 from federatedml.statistic import data_overview
+from federatedml.util import consts
 
 LOGGER = log_utils.getLogger()
 
@@ -94,7 +94,6 @@ class HeteroFeatureBinningGuest(BaseHeteroFeatureBinning):
         self.transform(data_instances)
         LOGGER.debug("Data schema is {}".format(self.data_output.schema))
         return self.data_output
-
 
     @staticmethod
     def encrypt(x, encryptor):

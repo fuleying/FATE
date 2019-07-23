@@ -20,7 +20,7 @@
             "input": {
                 "data": {
                     "data": [
-                        "args.train_data"
+                        "args.eval_data"
                     ]
                 },
                 "model": [
@@ -76,7 +76,7 @@
             },
             "output": {
                 "data": ["train"],
-                "model": ["selected"]
+                 "model": ["selected"]
             }
         },
         "hetero_feature_selection_1": {
@@ -95,12 +95,45 @@
                 "data": ["eval"]
             }
          },
+
+        "onehot_0": {
+            "module": "OneHotEncoder",
+            "input": {
+                "data": {
+                    "data": [
+                        "hetero_feature_selection_0.train"
+                    ]
+                }
+            },
+            "output": {
+                "data": ["train"],
+                "model": ["one_hot_encoder"]
+            }
+        },
+
+        "onehot_1": {
+            "module": "OneHotEncoder",
+            "input": {
+                "data": {
+                    "data": [
+                        "hetero_feature_selection_1.eval"
+                    ]
+                },
+                "model": [
+                    "onehot_0.one_hot_encoder"
+                ]
+            },
+            "output": {
+                "data": ["eval"]
+            }
+        },
+
         "hetero_lr_0": {
             "module": "HeteroLR",
             "input": {
                 "data": {
-                    "train_data": ["hetero_feature_selection_0.train"],
-                    "eval_data": ["hetero_feature_selection_1.eval"]
+                    "train_data": ["onehot_0.train"],
+                    "eval_data": ["onehot_0.train"]
                 }
             },
             "output": {
@@ -112,7 +145,7 @@
             "module": "HeteroLR",
             "input": {
                 "data": {
-                    "eval_data": ["hetero_feature_selection_1.eval"]
+                    "eval_data": ["onehot_1.eval"]
                 },
                 "model": [
                     "hetero_lr_0.hetero_lr"

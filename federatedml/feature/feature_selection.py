@@ -20,12 +20,13 @@
 import math
 import operator
 import random
+
 from google.protobuf import json_format
 
 from arch.api.proto import feature_selection_meta_pb2
 from arch.api.proto import feature_selection_param_pb2
 from arch.api.utils import log_utils
-from federatedml.param.param import FeatureBinningParam, UniqueValueParam
+from federatedml.param.param import UniqueValueParam
 from federatedml.statistic.data_overview import get_header
 from federatedml.statistic.statics import MultivariateStatisticalSummary
 from federatedml.util import consts
@@ -257,7 +258,8 @@ class UnionPercentileFilter(FilterMethod):
 
         sorted_value = sorted(total_values, reverse=self.pick_high)
         thres_idx = int(math.floor(self.percentiles * len(sorted_value) - consts.FLOAT_ZERO))
-        LOGGER.debug("sorted_value: {}, thres_idx: {}, len_sort_value: {}".format(sorted_value, thres_idx, len(sorted_value)))
+        LOGGER.debug(
+            "sorted_value: {}, thres_idx: {}, len_sort_value: {}".format(sorted_value, thres_idx, len(sorted_value)))
         self.value_threshold = sorted_value[thres_idx]
 
 
@@ -319,7 +321,7 @@ class UniqueValueFilter(FilterMethod):
 
         result = feature_selection_param_pb2.FeatureSelectionFilterParam(feature_values=self.feature_values,
                                                                          left_cols=left_col_obj,
-                                                                         filter_name=consts.UNIQUE_VALUE)
+                                                                         filter_name="UNIQUE FILTER")
         return result
 
     def get_meta_obj(self):
@@ -380,7 +382,7 @@ class IVValueSelectFilter(FilterMethod):
         host_obj = {}
         LOGGER.debug("In get_param_obj, host_cols: {}".format(self.host_cols))
         for host_name, host_left_cols in self.host_cols.items():
-            host_cols = list(str(host_left_cols.keys()))
+            host_cols = list(map(str, host_left_cols.keys()))
 
             # new_host_left_cols = {}
             # for k, v in host_left_cols.items():
@@ -417,7 +419,7 @@ class IVValueSelectFilter(FilterMethod):
                                                                          host_feature_values=host_value_objs,
                                                                          left_cols=left_col_obj,
                                                                          host_left_cols=host_obj,
-                                                                         filter_name=consts.IV_VALUE_THRES)
+                                                                         filter_name="IV_VALUE_FILTER")
         return result
 
     def get_meta_obj(self):
@@ -526,7 +528,7 @@ class IVPercentileFilter(FilterMethod):
                                                                          host_feature_values=host_value_objs,
                                                                          left_cols=left_col_obj,
                                                                          host_left_cols=host_obj,
-                                                                         filter_name=consts.IV_PERCENTILE)
+                                                                         filter_name='IV_PERCENTILE')
         json_result = json_format.MessageToJson(result, including_default_value_fields=True)
         LOGGER.debug("json_result: {}".format(json_result))
         return result
@@ -594,7 +596,7 @@ class CoeffOfVarValueFilter(FilterMethod):
         result = feature_selection_param_pb2.FeatureSelectionFilterParam(
             feature_values=self.feature_values,
             left_cols=left_col_obj,
-            filter_name=consts.COEFFICIENT_OF_VARIATION_VALUE_THRES)
+            filter_name="COEFFICIENT OF VARIANCE")
         return result
 
     def get_meta_obj(self):
@@ -650,7 +652,7 @@ class OutlierFilter(FilterMethod):
 
         result = feature_selection_param_pb2.FeatureSelectionFilterParam(feature_values=self.feature_values,
                                                                          left_cols=left_col_obj,
-                                                                         filter_name=consts.OUTLIER_COLS)
+                                                                         filter_name="OUTLIER")
         return result
 
     def get_meta_obj(self):

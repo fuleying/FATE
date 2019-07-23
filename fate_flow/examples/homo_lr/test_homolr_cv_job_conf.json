@@ -54,7 +54,24 @@
                 "need_cv": true,
                 "evaluate_param": {
                     "thresholds": [0.3, 0.5, 0.7],
-                    "metrics": ["auc", "ks"]
+                    "metrics": [
+                        "auc",
+                        "precision",
+                        "ks",
+                        "lift",
+                        "gain",
+                        "precision",
+                        "recall",
+                        "accuracy",
+                        "explained_variance",
+                        "mean_absolute_error",
+                        "mean_squared_error",
+                        "mean_squared_log_error",
+                        "median_absolute_error",
+                        "r2_score",
+                        "root_mean_squared_error",
+                        "roc"
+                    ]
                 }
             }
         },

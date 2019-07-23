@@ -109,19 +109,25 @@ class KFold(BaseCrossValidator):
 
             this_flowid = 'train.' + str(fold_num)
             model.set_flowid(this_flowid)
-            model.set_transfer_variable()
             model.fit(train_data)
 
-            this_flowid = 'predict.' + str(fold_num)
+            this_flowid = 'predict_train.' + str(fold_num)
             model.set_flowid(this_flowid)
-            model.set_transfer_variable()
+            train_pred_res = model.predict(train_data)
 
+            if train_pred_res is not None:
+                fold_name = "_".join(['train', 'fold', str(fold_num)])
+                pred_res = train_pred_res.mapValues(lambda value: value + ['train'])
+                self.evaluate(pred_res, fold_name, model)
+
+            this_flowid = 'predict_validate.' + str(fold_num)
+            model.set_flowid(this_flowid)
             pred_res = model.predict(test_data)
             model.set_predict_data_schema(pred_res, test_data.schema)
 
             if pred_res is not None:
-                fold_name = "_".join(['fold', str(fold_num)])
-                pred_res = pred_res.mapValues(lambda value: value + [fold_name])
+                fold_name = "_".join(['validate', 'fold', str(fold_num)])
+                pred_res = pred_res.mapValues(lambda value: value + ['validate'])
                 self.evaluate(pred_res, fold_name, model)
             fold_num += 1
 
@@ -133,18 +139,15 @@ class KFold(BaseCrossValidator):
             model = copy.deepcopy(original_model)
             this_flowid = 'train.' + str(fold_num)
             model.set_flowid(this_flowid)
-            model.set_transfer_variable()
-            model.fit()
+            model.fit(None)
 
-            this_flowid = 'predict.' + str(fold_num)
+            this_flowid = 'predict_train.' + str(fold_num)
             model.set_flowid(this_flowid)
-            model.set_transfer_variable()
-            pred_res = model.predict()
+            model.predict(None)
 
-            if pred_res is None:
-                continue
-            fold_name = "_".join(['fold', str(fold_num)])
-            self.evaluate(pred_res, fold_name, model)
+            this_flowid = 'predict_validate.' + str(fold_num)
+            model.set_flowid(this_flowid)
+            model.predict(None)
 
     def _init_model(self, param):
         self.model_param = param
