@@ -1,7 +1,5 @@
 package com.webank.ai.fate.board.utils;
 
-import org.springframework.core.io.ClassPathResource;
-
 import java.io.*;
 
 public class ReadJson {

@@ -14,7 +14,6 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -27,15 +26,14 @@ import java.util.Set;
 @Service
 public class SshService implements InitializingBean {
 
+    static Map<String, Session> sessionMap = Maps.newHashMap();
     Logger logger = LoggerFactory.getLogger(SshService.class);
+    Map<String, SshInfo> sshInfoMap = Maps.newHashMap();
+    private String pubKeyPath = "";
 
     public SshInfo getSSHInfo(String ip) {
         return this.sshInfoMap.get(ip);
     }
-
-
-    private  String  pubKeyPath="";
-
 
     public void load(InputStream inputStream) throws IOException {
 
@@ -66,21 +64,16 @@ public class SshService implements InitializingBean {
     @Override
     public void afterPropertiesSet() throws Exception {
         String filePath = System.getProperty(Dict.SSH_CONFIG_FILE);
-        if (filePath ==null||"".equals(filePath)) {
+        if (filePath == null || "".equals(filePath)) {
             ClassPathResource classPathResource = new ClassPathResource("ssh.properties");
             load(classPathResource.getInputStream());
         } else {
-            File file = new File(filePath+"/ssh.properties");
+            File file = new File(filePath + "/ssh.properties");
             Preconditions.checkArgument(file.exists() && file.isFile());
             load(new FileInputStream(file));
         }
         ;
     }
-
-    Map<String, SshInfo> sshInfoMap = Maps.newHashMap();
-
-
-    static Map<String, Session> sessionMap = Maps.newHashMap();
 
     public ChannelExec executeCmd(Session session, String cmd) throws Exception {
 
@@ -138,14 +131,12 @@ public class SshService implements InitializingBean {
             JSch jsch = new JSch();
 
 
-
-
             session = jsch.getSession(user, host, port);
             if (session == null) {
                 throw new Exception("session is null");
             }
 
-           // jsch.addIdentity(pubKeyPath);
+            // jsch.addIdentity(pubKeyPath);
 
             session.setPassword(passwd);
             java.util.Properties config = new java.util.Properties();
@@ -156,7 +147,7 @@ public class SshService implements InitializingBean {
             } catch (Exception e) {
                 e.printStackTrace();
 
-                logger.error("ssh connect error {} password {}",sessionKey,passwd);
+                logger.error("ssh connect error {} password {}", sessionKey, passwd);
                 throw new Exception("ssh connect error");
             }
             sessionMap.put(sessionKey, session);

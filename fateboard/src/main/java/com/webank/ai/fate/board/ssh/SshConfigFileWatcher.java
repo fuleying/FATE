@@ -22,13 +22,12 @@ import static java.nio.file.StandardWatchEventKinds.*;
 @Component
 class SshConfigFileWatcher implements InitializingBean {
 
-    Logger logger = LoggerFactory.getLogger(SshConfigFileWatcher.class);
-
-    private WatchService watcher;
     private final Map<WatchKey, Path> keys = Maps.newHashMap();
-    private boolean trace = false;
+    Logger logger = LoggerFactory.getLogger(SshConfigFileWatcher.class);
     @Autowired
     SshService sshService;
+    private WatchService watcher;
+    private boolean trace = false;
 
 
     SshConfigFileWatcher() {

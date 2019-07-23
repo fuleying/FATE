@@ -19,50 +19,35 @@ public class WebConfigration implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-          registry.addMapping("/**").allowedMethods("*").allowedOrigins("http://localhost:8028").allowCredentials(true);
+        registry.addMapping("/**").allowedMethods("*").allowedOrigins("http://localhost:8028").allowCredentials(true);
     }
 
     @Override
     public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
-
-
-        FastJsonHttpMessageConverter  fastJsonHttpMessageConverter = new FastJsonHttpMessageConverter();
-//        FastJsonConfig  fastJsonConfig = new FastJsonConfig();
+        FastJsonHttpMessageConverter fastJsonHttpMessageConverter = new FastJsonHttpMessageConverter();
         converters.add(fastJsonHttpMessageConverter);
-
     }
 
     @Bean
-    public HttpMessageConverters fastJsonHttpMessageConverter(){
-        FastJsonHttpMessageConverter  fastJsonHttpMessageConverter = new FastJsonHttpMessageConverter();
+    public HttpMessageConverters fastJsonHttpMessageConverter() {
+        FastJsonHttpMessageConverter fastJsonHttpMessageConverter = new FastJsonHttpMessageConverter();
         return new HttpMessageConverters(fastJsonHttpMessageConverter);
 
     }
-
-
 
     @Bean
     public ServerEndpointExporter serverEndpointExporter() {
         return new ServerEndpointExporter();
     }
 
-
-
     @Bean(name = "asyncServiceExecutor")
     public ThreadPoolTaskExecutor asyncServiceExecutor() {
-
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-
         executor.setCorePoolSize(200);
-
         executor.setMaxPoolSize(200);
-
         executor.setQueueCapacity(10);
-
         executor.setThreadNamePrefix("asyncServiceExecutor");
-
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-
         executor.initialize();
         return executor;
     }

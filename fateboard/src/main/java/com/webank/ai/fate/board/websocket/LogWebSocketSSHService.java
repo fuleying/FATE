@@ -7,10 +7,8 @@ import com.webank.ai.fate.board.disruptor.LogFileTransferEventProducer;
 import com.webank.ai.fate.board.log.LogFileService;
 import com.webank.ai.fate.board.log.LogScanner;
 import com.webank.ai.fate.board.log.RandomFileScanner;
-
 import com.webank.ai.fate.board.pojo.SshInfo;
 import com.webank.ai.fate.board.services.JobManagerService;
-import com.webank.ai.fate.board.ssh.SftpUtils;
 import com.webank.ai.fate.board.ssh.SshLogScanner;
 import com.webank.ai.fate.board.ssh.SshService;
 import com.webank.ai.fate.board.utils.GetSystemInfo;
@@ -28,66 +26,48 @@ import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.File;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 
 
 @ServerEndpoint(value = "/log/{jobId}/{role}/{partyId}/{componentId}/{type}", configurator = Configurator.class)
 @Component
 public class LogWebSocketSSHService implements InitializingBean, ApplicationContextAware {
 
-    final String DEFAULT_COMPONENT_ID = "default";
-
+    private static final Logger logger = LoggerFactory.getLogger(LogWebSocketSSHService.class);
     static ApplicationContext applicationContext;
 
     static SshService sshService;
 
     static LogFileService logFileService;
-
-    private Integer tailNum = 1000;
-
-
-
-
-    private static final Logger logger = LoggerFactory.getLogger(LogWebSocketSSHService.class);
-
     static LogFileTransferEventProducer logFileTransferEventProducer;
-
     static ThreadPoolTaskExecutor asyncServiceExecutor;
-
+    final String DEFAULT_COMPONENT_ID = "default";
     Map<Session, LogScanner> sessionMap = Maps.newHashMap();
-
-
+    private Integer tailNum = 1000;
 
     /**
      * call method when connection build
      */
     @OnOpen
     public synchronized void onOpen(Session session, @PathParam("jobId") String jobId,
-                                    @PathParam("role")  String role,
-                                    @PathParam("partyId")  String partyId,
+                                    @PathParam("role") String role,
+                                    @PathParam("partyId") String partyId,
                                     @PathParam("componentId") String componentId,
                                     @PathParam("type") String type
 
     ) throws Exception {
 
 
-        //session.getBasicRemote().setBatchingAllowed(true);
-
-        String filePath = logFileService.buildFilePath(jobId, componentId, type,role,partyId);
+        String filePath = logFileService.buildFilePath(jobId, componentId, type, role, partyId);
 
         Preconditions.checkArgument(StringUtils.isNotEmpty(filePath), "file path is null");
 
-         if(LogFileService.checkFileIsExist(filePath)){
+        if (LogFileService.checkFileIsExist(filePath)) {
             File file = new File(filePath);
 
             long lines = LogFileService.getLocalFileLineCount(file);
 
-            logger.info("local file {} has {} line",filePath,lines);
+            logger.info("local file {} has {} line", filePath, lines);
 
             long skipLines = 0;
 
@@ -105,37 +85,35 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
             return;
 
         } else {
-            /**
-             * 远程文件
-             */
-            logger.info("local file path {} is not exist,try to find remote file",filePath);
 
-            LogFileService.JobTaskInfo jobTaskInfo = logFileService.getJobTaskInfo(jobId, componentId,role,partyId);
+            logger.info("local file path {} is not exist,try to find remote file", filePath);
+
+            LogFileService.JobTaskInfo jobTaskInfo = logFileService.getJobTaskInfo(jobId, componentId, role, partyId);
 
             Preconditions.checkArgument(StringUtils.isNotEmpty(jobTaskInfo.ip));
 
-             String localIp  = GetSystemInfo.getLocalIp();
+            String localIp = GetSystemInfo.getLocalIp();
 
-             if(localIp.equals(jobTaskInfo.ip)||"0.0.0.0".equals(jobTaskInfo.ip)){
-                 logger.error("local ip :{} job ip:{} log file {} not exist",localIp,jobTaskInfo.ip,filePath);
+            if (localIp.equals(jobTaskInfo.ip) || "0.0.0.0".equals(jobTaskInfo.ip)) {
+                logger.error("local ip :{} job ip:{} log file {} not exist", localIp, jobTaskInfo.ip, filePath);
 
-                 return ;
-             }
+                return;
+            }
 
             SshInfo sshInfo = sshService.getSSHInfo(jobTaskInfo.ip);
 
             Preconditions.checkArgument(sshInfo != null);
 
-            if(JobManagerService.jobFinishStatus.contains(jobTaskInfo.jobStatus)){
+            if (JobManagerService.jobFinishStatus.contains(jobTaskInfo.jobStatus)) {
                 String jobDir = logFileService.getJobDir(jobId);
                 logFileTransferEventProducer.onData(sshInfo, jobDir, jobDir);
             }
 
-             Integer  lines= logFileService.getRemoteFileLineCount(sshInfo,filePath);
+            Integer lines = logFileService.getRemoteFileLineCount(sshInfo, filePath);
 
-            Integer  beginLine =  tailNum>lines?0:lines-tailNum;
+            Integer beginLine = tailNum > lines ? 0 : lines - tailNum;
 
-            SshLogScanner sshLogScanner = new SshLogScanner(session, logFileService, sshInfo, jobId, componentId, type,role,partyId,beginLine);
+            SshLogScanner sshLogScanner = new SshLogScanner(session, logFileService, sshInfo, jobId, componentId, type, role, partyId, beginLine);
 
             sessionMap.put(session, sshLogScanner);
 
@@ -183,7 +161,7 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
      */
     @OnError
     public void onError(Session session, Throwable error) {
-        logger.error("log web socket error",error);
+        logger.error("log web socket error", error);
         error.printStackTrace();
     }
 
@@ -202,8 +180,6 @@ public class LogWebSocketSSHService implements InitializingBean, ApplicationCont
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         LogWebSocketSSHService.applicationContext = applicationContext;
     }
-
-
 
 
 }

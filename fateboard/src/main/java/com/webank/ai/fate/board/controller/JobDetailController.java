@@ -9,14 +9,12 @@ import com.webank.ai.fate.board.global.ResponseResult;
 import com.webank.ai.fate.board.services.TaskManagerService;
 import com.webank.ai.fate.board.utils.Dict;
 import com.webank.ai.fate.board.utils.HttpClientPool;
-import com.webank.ai.fate.board.utils.ReadJson;
 import com.webank.ai.fate.board.utils.ResponseUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.jackson.JsonObjectDeserializer;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,12 +24,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.*;
-
-
 
 
 @Controller
@@ -63,10 +55,10 @@ public class JobDetailController {
         String role = jsonObject.getString(Dict.ROLE);
         String partyId = jsonObject.getString(Dict.PARTY_ID);
         String componentName = jsonObject.getString(Dict.COMPONENT_NAME);
-        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName));
-        jsonObject.put(Dict.PARTY_ID,new Integer(partyId));
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId, role, partyId, componentName));
+        jsonObject.put(Dict.PARTY_ID, new Integer(partyId));
         String result = httpClientPool.post(fateUrl + Dict.URL_COPONENT_METRIC, jsonObject.toJSONString());
-        return  ResponseUtil.buildResponse(result,Dict.DATA);
+        return ResponseUtil.buildResponse(result, Dict.DATA);
     }
 
     ;
@@ -88,11 +80,10 @@ public class JobDetailController {
         String componentName = jsonObject.getString(Dict.COMPONENT_NAME);
         String metricNamespace = jsonObject.getString(Dict.METRIC_NAMESPACE);
         String metricName = jsonObject.getString(Dict.METRIC_NAME);
-        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName,metricName,metricNamespace));
-        jsonObject.put(Dict.PARTY_ID,new Integer(partyId));
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId, role, partyId, componentName, metricName, metricNamespace));
+        jsonObject.put(Dict.PARTY_ID, new Integer(partyId));
         String result = httpClientPool.post(fateUrl + Dict.URL_COPONENT_METRIC_DATA, jsonObject.toJSONString());
-        return  ResponseUtil.buildResponse(result,null);
-
+        return ResponseUtil.buildResponse(result, null);
     }
 
     /**
@@ -104,23 +95,18 @@ public class JobDetailController {
     @RequestMapping(value = "/tracking/component/parameters", method = RequestMethod.POST)
     @ResponseBody
     public ResponseResult getDetailInfo(@RequestBody String param) {
-
-
         JSONObject jsonObject = JSON.parseObject(param);
         String jobId = jsonObject.getString(Dict.JOBID);
         String role = jsonObject.getString(Dict.ROLE);
         String partyId = jsonObject.getString(Dict.PARTY_ID);
         String componentName = jsonObject.getString(Dict.COMPONENT_NAME);
-
-        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName));
-        jsonObject.put(Dict.PARTY_ID,new Integer(partyId));
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId, role, partyId, componentName));
+        jsonObject.put(Dict.PARTY_ID, new Integer(partyId));
         String result = httpClientPool.post(fateUrl + Dict.URL_COPONENT_PARAMETERS, jsonObject.toJSONString());
-        Preconditions.checkArgument(result!=null);
-
-        return  ResponseUtil.buildResponse(result,Dict.DATA);
+        Preconditions.checkArgument(result != null);
+        return ResponseUtil.buildResponse(result, Dict.DATA);
 
     }
-
 
     /**
      * get dag dependencies
@@ -131,18 +117,15 @@ public class JobDetailController {
     @RequestMapping(value = "/pipeline/dag/dependencies", method = RequestMethod.POST)
     @ResponseBody
     public ResponseResult getDagDependencies(@RequestBody String param) {
-
-
         JSONObject jsonObject = JSON.parseObject(param);
         String jobId = jsonObject.getString(Dict.JOBID);
         String role = jsonObject.getString(Dict.ROLE);
         String partyId = jsonObject.getString(Dict.PARTY_ID);
-        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId));
-        jsonObject.put(Dict.PARTY_ID,new Integer(partyId));
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId, role, partyId));
+        jsonObject.put(Dict.PARTY_ID, new Integer(partyId));
         String result = httpClientPool.post(fateUrl + Dict.URL_DAG_DEPENDENCY, jsonObject);
-        Preconditions.checkArgument(result!=null);
+        Preconditions.checkArgument(result != null);
         JSONObject resultObject = JSON.parseObject(result);
-
         Integer retcode = resultObject.getInteger(Dict.RETCODE);
 
         if (retcode == 0) {
@@ -164,15 +147,8 @@ public class JobDetailController {
         }
 
 
-
     }
 
-    /**
-     * model output
-     *
-     * @param param
-     * @return
-     */
     @RequestMapping(value = "/tracking/component/output/model", method = RequestMethod.POST)
     @ResponseBody
     public ResponseResult getModel(@RequestBody String param) {
@@ -181,20 +157,12 @@ public class JobDetailController {
         String role = jsonObject.getString(Dict.ROLE);
         String partyId = jsonObject.getString(Dict.PARTY_ID);
         String componentName = jsonObject.getString(Dict.COMPONENT_NAME);
-        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName));
-        jsonObject.put(Dict.PARTY_ID,new Integer(partyId));
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId, role, partyId, componentName));
+        jsonObject.put(Dict.PARTY_ID, new Integer(partyId));
         String result = httpClientPool.post(fateUrl + Dict.URL_OUTPUT_MODEL, jsonObject.toJSONString());
-        return  ResponseUtil.buildResponse(result,null);
-
-
+        return ResponseUtil.buildResponse(result, null);
     }
 
-    /**
-     * data output
-     *
-     * @param param
-     * @return
-     */
     @RequestMapping(value = "/tracking/component/output/data", method = RequestMethod.POST)
     @ResponseBody
     public ResponseResult getData(@RequestBody String param) {
@@ -203,12 +171,9 @@ public class JobDetailController {
         String role = jsonObject.getString(Dict.ROLE);
         String partyId = jsonObject.getString(Dict.PARTY_ID);
         String componentName = jsonObject.getString(Dict.COMPONENT_NAME);
-        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,role,partyId,componentName));
-        jsonObject.put(Dict.PARTY_ID,new Integer(partyId));
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId, role, partyId, componentName));
+        jsonObject.put(Dict.PARTY_ID, new Integer(partyId));
         String result = httpClientPool.post(fateUrl + Dict.URL_OUTPUT_DATA, jsonObject.toJSONString());
-        return  ResponseUtil.buildResponse(result,null);
-
+        return ResponseUtil.buildResponse(result, null);
     }
-
-
 }

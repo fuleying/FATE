@@ -5,6 +5,9 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 public class SshInfo {
     private String user;
+    private String password;
+    private String ip;
+    private Integer port;
 
     public String getPassword() {
         return password;
@@ -13,8 +16,6 @@ public class SshInfo {
     public void setPassword(String password) {
         this.password = password;
     }
-
-    private String password;
 
     public String getUser() {
         return user;
@@ -40,14 +41,11 @@ public class SshInfo {
         this.port = port;
     }
 
-    private String ip;
-    private Integer port;
-
     @Override
-    public  String  toString(){
+    public String toString() {
 
         String str = ToStringBuilder.reflectionToString(this, ToStringStyle.DEFAULT_STYLE);
-        return  str;
+        return str;
 
     }
 }

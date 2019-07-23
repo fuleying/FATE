@@ -22,7 +22,7 @@ public class Task {
     private Long fUpdateTime;
 
     private Long fStartTime;
-    @JsonProperty(defaultValue = "" )
+    @JsonProperty(defaultValue = "")
     private Long fEndTime;
 
     private Long fElapsed;

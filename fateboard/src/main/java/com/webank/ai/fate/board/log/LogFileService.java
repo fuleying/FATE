@@ -22,10 +22,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
-import javax.xml.bind.ValidationException;
 import java.io.*;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -34,26 +31,23 @@ import java.util.Map;
 public class LogFileService {
 
 
-    String JOB_LOG_PATH = "$job_id/$role/$party_id/$file_name";
     final static String TASK_LOG_PATH = "$job_id/$role/$party_id/$component_id/$file_name";
     final static String DEFAULT_FILE_NAME = "INFO.log";
-
     final static String DEFAULT_COMPONENT_ID = "default";
     final static String DEFAULT_LOG_TYPE = "default";
-
+    String JOB_LOG_PATH = "$job_id/$role/$party_id/$file_name";
     @Value("${FATE_DEPLOY_PREFIX:/data/projects/fate/python/logs/}")
     String FATE_DEPLOY_PREFIX = "/data/projects/fate/python/logs/";
 
     @Autowired
     SshService sshService;
+    Logger logger = LoggerFactory.getLogger(LogFileService.class);
     @Autowired
     private JobManagerService jobManagerService;
-
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
     @Autowired
     private TaskMapper taskMapper;
-    Logger logger = LoggerFactory.getLogger(LogFileService.class);
 
     public static String toJsonString(String content,
                                       long bytesize,
@@ -64,7 +58,6 @@ public class LogFileService {
         logInfo.put(Dict.LOG_LINE_NUM, lineNum);
         return JSON.toJSONString(logInfo);
     }
-
 
 
     public static Map toLogMap(String content, long lineNum) {
@@ -94,56 +87,62 @@ public class LogFileService {
     }
 
 
+    public String buildFilePath(String jobId, String componentId, String type, String role, String partyId) {
 
-    public String buildFilePath(String jobId, String componentId, String type,String  role,String partyId) {
-
-        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId,componentId,type,role,partyId));
+        Preconditions.checkArgument(StringUtils.isNoneEmpty(jobId, componentId, type, role, partyId));
         String filePath = "";
         if (componentId == null || (componentId != null && componentId.equals(DEFAULT_COMPONENT_ID))) {
 
-            filePath = JOB_LOG_PATH.replace("$job_id", jobId).replace("$role",role).replace("$party_id",partyId);
+            filePath = JOB_LOG_PATH.replace("$job_id", jobId).replace("$role", role).replace("$party_id", partyId);
 
         } else {
-            filePath = TASK_LOG_PATH.replace("$job_id", jobId).replace("$component_id", componentId).replace("$role",role).replace("$party_id",partyId);
+            filePath = TASK_LOG_PATH.replace("$job_id", jobId).replace("$component_id", componentId).replace("$role", role).replace("$party_id", partyId);
         }
 
         if (type.equals(DEFAULT_LOG_TYPE)) {
             filePath = filePath.replace("$file_name", DEFAULT_FILE_NAME);
         } else {
 
-            switch(type){
-                case  "error":       filePath = filePath.replace("$file_name", "ERROR.log");  break;
-                case  "debug":       filePath = filePath.replace("$file_name", "DEBUG.log");  break;
-                case   "info":       filePath = filePath.replace("$file_name", "INFO.log");  break;
-                case  "warning":     filePath =filePath.replace("$file_name", "WARN.log");  break;
-                default:             filePath = filePath.replace("$file_name", "INFO.log");
+            switch (type) {
+                case "error":
+                    filePath = filePath.replace("$file_name", "ERROR.log");
+                    break;
+                case "debug":
+                    filePath = filePath.replace("$file_name", "DEBUG.log");
+                    break;
+                case "info":
+                    filePath = filePath.replace("$file_name", "INFO.log");
+                    break;
+                case "warning":
+                    filePath = filePath.replace("$file_name", "WARN.log");
+                    break;
+                default:
+                    filePath = filePath.replace("$file_name", "INFO.log");
 
             }
 
         }
-        String  result = FATE_DEPLOY_PREFIX + filePath;
+        String result = FATE_DEPLOY_PREFIX + filePath;
         logger.info("build filePath result {}", result);
         return result;
     }
 
     public Integer getRemoteFileLineCount(SshInfo sshInfo, String logFilePath) throws Exception {
-        Preconditions.checkArgument(sshInfo!=null&&logFilePath!=null&&!"".equals(logFilePath));
+        Preconditions.checkArgument(sshInfo != null && logFilePath != null && !"".equals(logFilePath));
         Channel wcChannel = null;
         BufferedReader reader = null;
-        String lineString= null;
+        String lineString = null;
         Session session = sshService.connect(sshInfo);
         wcChannel = sshService.executeCmd(session, "wc -l " + logFilePath + "| awk '{print $1}'");
         try {
             InputStream in = wcChannel.getInputStream();
-             reader = new BufferedReader(new InputStreamReader(in));
-             lineString = reader.readLine();
-            }
-
-            finally{
-            if(wcChannel!=null) {
+            reader = new BufferedReader(new InputStreamReader(in));
+            lineString = reader.readLine();
+        } finally {
+            if (wcChannel != null) {
                 wcChannel.disconnect();
             }
-            if(reader!=null) {
+            if (reader != null) {
                 reader.close();
             }
         }
@@ -157,20 +156,20 @@ public class LogFileService {
     public void checkSshInfo(String ip) throws Exception {
 
         SshInfo sshInfo = this.sshService.getSSHInfo(ip);
-        if(sshInfo==null){
+        if (sshInfo == null) {
             String sshConfigFilePath = System.getProperty(Dict.SSH_CONFIG_FILE);
-            throw  new  Exception("ip "+ip+"ssh info is wrong, the path of ssh config file is"+sshConfigFilePath);
+            throw new Exception("ip " + ip + "ssh info is wrong, the path of ssh config file is" + sshConfigFilePath);
 
         }
 
     }
 
 
-    public List<Map> getRemoteLogWithFixSize(String jobId, String componentId, String type,String role,String partyId, int begin, int count) throws Exception {
+    public List<Map> getRemoteLogWithFixSize(String jobId, String componentId, String type, String role, String partyId, int begin, int count) throws Exception {
         List<Map> results = Lists.newArrayList();
-        JobTaskInfo jobTaskInfo = this.getJobTaskInfo(jobId, componentId,role,partyId);
+        JobTaskInfo jobTaskInfo = this.getJobTaskInfo(jobId, componentId, role, partyId);
         SshInfo sshInfo = this.sshService.getSSHInfo(jobTaskInfo.ip);
-        String filePath = this.buildFilePath(jobId, componentId, type,role,partyId);
+        String filePath = this.buildFilePath(jobId, componentId, type, role, partyId);
         Session session = this.sshService.connect(sshInfo);
         Channel channel = this.sshService.executeCmd(session, "tail -n +" + begin + " " + filePath + " | head -n " + count);
 
@@ -188,8 +187,8 @@ public class LogFileService {
                 index++;
 
             } while (content != null);
-        }finally {
-            if(channel!=null) {
+        } finally {
+            if (channel != null) {
                 channel.disconnect();
             }
 
@@ -198,10 +197,10 @@ public class LogFileService {
     }
 
 
-    public Channel getRemoteLogStream(String jobId, String componentId,String role,String partyId ,String cmd) throws Exception {
+    public Channel getRemoteLogStream(String jobId, String componentId, String role, String partyId, String cmd) throws Exception {
 
-        JobTaskInfo jobTaskInfo = this.getJobTaskInfo(jobId, componentId,role,partyId);
-        Preconditions.checkArgument(StringUtils.isNotEmpty(jobTaskInfo.ip ), "remote ip is null");
+        JobTaskInfo jobTaskInfo = this.getJobTaskInfo(jobId, componentId, role, partyId);
+        Preconditions.checkArgument(StringUtils.isNotEmpty(jobTaskInfo.ip), "remote ip is null");
         SshInfo sshInfo = this.sshService.getSSHInfo(jobTaskInfo.ip);
         return getRemoteLogStream(sshInfo, cmd);
 
@@ -218,13 +217,12 @@ public class LogFileService {
     }
 
 
-    public Channel getRemoteLogStream(String jobId, String componentId, String type,String role,String partyId, int endNum) throws Exception {
-        String filePath = this.buildFilePath(jobId, componentId, type,role,partyId);
+    public Channel getRemoteLogStream(String jobId, String componentId, String type, String role, String partyId, int endNum) throws Exception {
+        String filePath = this.buildFilePath(jobId, componentId, type, role, partyId);
         String cmd = this.buildCommand(endNum, filePath);
-        Channel channel = getRemoteLogStream(jobId, componentId,role,partyId, cmd);
+        Channel channel = getRemoteLogStream(jobId, componentId, role, partyId, cmd);
         return channel;
     }
-
 
 
     public String buildCommand(int endNum, String filePath) {
@@ -234,24 +232,7 @@ public class LogFileService {
 
     }
 
-    public static class JobTaskInfo {
-
-
-        public String jobStatus;
-
-        public String taskStatus;
-
-        public String ip;
-
-        public String jobId;
-
-        public String componentId;
-
-    }
-
-    ;
-
-    public JobTaskInfo getJobTaskInfo(String jobId, String componentId,String role,String partyId) {
+    public JobTaskInfo getJobTaskInfo(String jobId, String componentId, String role, String partyId) {
 
         JobTaskInfo jobTaskInfo = new JobTaskInfo();
 
@@ -259,7 +240,7 @@ public class LogFileService {
 
         jobTaskInfo.componentId = componentId;
 
-        JobWithBLOBs jobWithBLOBs = jobManagerService.queryJobByConditions(jobId,role,partyId);
+        JobWithBLOBs jobWithBLOBs = jobManagerService.queryJobByConditions(jobId, role, partyId);
 
         Preconditions.checkArgument(jobWithBLOBs != null, "job info " + jobId + " is not exist");
 
@@ -286,6 +267,23 @@ public class LogFileService {
         }
         jobTaskInfo.ip = ip;
         return jobTaskInfo;
+
+    }
+
+    ;
+
+    public static class JobTaskInfo {
+
+
+        public String jobStatus;
+
+        public String taskStatus;
+
+        public String ip;
+
+        public String jobId;
+
+        public String componentId;
 
     }
 }

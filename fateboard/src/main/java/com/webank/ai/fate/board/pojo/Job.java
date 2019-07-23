@@ -23,12 +23,21 @@ public class Job extends JobKey {
     private Long fUpdateTime;
 
     private Long fStartTime;
-    @JsonProperty(defaultValue = "" )
+    @JsonProperty(defaultValue = "")
     private Long fEndTime;
-    @JsonProperty(defaultValue = "" )
+    @JsonProperty(defaultValue = "")
     private Long fElapsed;
 
     private String fRunIp;
+
+    public static void main(String[] args) {
+
+        Job job = new Job();
+
+        System.err.println(JSON.toJSONString(job));
+
+
+    }
 
     public String getfName() {
         return fName;
@@ -132,16 +141,6 @@ public class Job extends JobKey {
 
     public void setfRunIp(String fRunIp) {
         this.fRunIp = fRunIp == null ? null : fRunIp.trim();
-    }
-
-
-    public  static void main(String[] args){
-
-        Job  job = new Job();
-        
-       System.err.println( JSON.toJSONString(job));
-
-
     }
 
 }

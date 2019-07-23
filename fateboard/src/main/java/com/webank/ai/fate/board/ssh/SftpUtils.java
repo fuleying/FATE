@@ -20,7 +20,6 @@ public class SftpUtils {
         try {
             JSch jsch = new JSch();
             Session sshSession = jsch.getSession(sshInfo.getUser(), sshInfo.getIp(), sshInfo.getPort());
-
             if (log.isInfoEnabled()) {
                 log.info("Session created.");
             }
@@ -37,11 +36,10 @@ public class SftpUtils {
             if (log.isInfoEnabled()) {
                 log.info("Opening Channel.");
             }
-
             return (ChannelSftp) channel;
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("sftp connect error",e);
         }
 
         return null;
@@ -113,9 +111,7 @@ public class SftpUtils {
         try {
 
             Vector v = listFiles(channelSftp, remotePath);
-            // sftp.cd(remotePath);
             if (v.size() > 0) {
-                System.out.println("本次处理文件个数不为零,开始下载...fileSize=" + v.size());
                 Iterator it = v.iterator();
                 while (it.hasNext()) {
                     LsEntry entry = (LsEntry) it.next();
@@ -128,7 +124,6 @@ public class SftpUtils {
                                 .trim();
                         fileEndFormat = fileEndFormat == null ? ""
                                 : fileEndFormat.trim();
-                        // 三种情况
                         if (fileFormat.length() > 0 && fileEndFormat.length() > 0) {
                             if (filename.startsWith(fileFormat) && filename.endsWith(fileEndFormat)) {
                                 flag = downloadFile(channelSftp, remotePath, filename, localPath, filename);
@@ -197,30 +192,23 @@ public class SftpUtils {
     public static boolean downloadFile(ChannelSftp sftp, String remotePath, String remoteFileName, String localPath, String localFileName) {
         FileOutputStream fieloutput = null;
         try {
-            // sftp.cd(remotePath);
-
             if (log.isInfoEnabled()) {
                 log.info("remote file {} : localfile {}", remotePath + remoteFileName, localPath + localFileName);
             }
-
             File file = new File(localPath + localFileName);
-            // mkdirs(localPath + localFileName);
             fieloutput = new FileOutputStream(file);
-
-
             sftp.get(remotePath + remoteFileName, fieloutput);
-
             return true;
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            log.error("file not find",e);
         } catch (SftpException e) {
-            e.printStackTrace();
+            log.error("sftp error",e);
         } finally {
             if (null != fieloutput) {
                 try {
                     fieloutput.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("sftp error",e);
                 }
             }
         }
@@ -228,19 +216,11 @@ public class SftpUtils {
     }
 
 
-
-    /**
-     * 删除本地文件
-     *
-     * @param filePath
-     * @return
-     */
     public static boolean deleteFile(String filePath) {
         File file = new File(filePath);
         if (!file.exists()) {
             return false;
         }
-
         if (!file.isFile()) {
             return false;
         }
@@ -251,13 +231,6 @@ public class SftpUtils {
         return rs;
     }
 
-
-    /**
-     * 判断目录是否存在
-     *
-     * @param directory
-     * @return
-     */
     public static boolean isDirExist(ChannelSftp channelSftp, String directory) {
         boolean isDirExistFlag = false;
         try {
@@ -272,12 +245,7 @@ public class SftpUtils {
         return isDirExistFlag;
     }
 
-    /**
-     * 删除stfp文件
-     *
-     * @param directory：要删除文件所在目录
-     * @param deleteFile：要删除的文件
-     */
+
     public static void deleteSFTP(ChannelSftp channelSftp, String directory, String deleteFile) {
         try {
             // sftp.cd(directory);
@@ -290,11 +258,7 @@ public class SftpUtils {
         }
     }
 
-    /**
-     * 如果目录不存在就创建目录
-     *
-     * @param path
-     */
+
     public static void mkdirs(String path) {
         File f = new File(path);
 
@@ -307,109 +271,8 @@ public class SftpUtils {
         }
     }
 
-    /**
-     * 列出目录下的文件
-     *
-     * @param directory：要列出的目录
-     * @return
-     * @throws SftpException
-     */
     public static Vector listFiles(ChannelSftp sftp, String directory) throws SftpException {
         return sftp.ls(directory);
     }
 
-
-//    /**测试*/
-//    public static void main(String[] args)
-//    {
-//        SFTPUtils sftp = null;
-//        // 本地存放地址
-//        String localPath = "D:/tomcat5/webapps/ASSESS/DocumentsDir/DocumentTempDir/txtData/";
-//        // Sftp下载路径
-//        String sftpPath = "/home/assess/sftp/jiesuan_2/2014/";
-//        List<String> filePathList = new ArrayList<String>();
-//        try
-//        {
-//            sftp = new SFTPUtils("10.163.201.115", "tdcp", "tdcp");
-//            sftp.connect();
-//            // 下载
-//            sftp.batchDownLoadFile(sftpPath, localPath, "ASSESS", ".txt", true);
-//        }
-//        catch (Exception e)
-//        {
-//            e.printStackTrace();
-//        }
-//        finally
-//        {
-//            sftp.disconnect();
-//        }
-//    }
-
-
-///**
-// * 时间处理工具类（简单的）
-// * @author Aaron
-// * @date 2014-6-17
-// * @time 下午1:39:44
-// * @version 1.0
-// */
-//public class DateUtil {
-//     /**
-//     * 默认时间字符串的格式
-//     */
-//    public static final String DEFAULT_FORMAT_STR = "yyyyMMddHHmmss";
-//
-//    public static final String DATE_FORMAT_STR = "yyyyMMdd";
-//
-//    /**
-//     * 获取系统时间的昨天
-//     * @return
-//     */
-//    public static String getSysTime(){
-//         Calendar ca = Calendar.getInstance();
-//         ca.set(Calendar.DATE, ca.get(Calendar.DATE)-1);
-//         Date d = ca.getTime();
-//         SimpleDateFormat sdf =  new SimpleDateFormat("yyyyMMdd");
-//         String a = sdf.format(d);
-//        return a;
-//    }
-//
-//    /**
-//     * 获取当前时间
-//     * @param date
-//     * @return
-//     */
-//    public static String getCurrentDate(String formatStr)
-//    {
-//        if (null == formatStr)
-//        {
-//            formatStr=DEFAULT_FORMAT_STR;
-//        }
-//        return date2String(new Date(), formatStr);
-//    }
-//
-//    /**
-//     * 返回年月日
-//     * @return yyyyMMdd
-//     */
-//    public static String getTodayChar8(String dateFormat){
-//        return DateFormatUtils.format(new Date(), dateFormat);
-//    }
-//
-//    /**
-//     * 将Date日期转换为String
-//     * @param date
-//     * @param formatStr
-//     * @return
-//     */
-//    public static String date2String(Date date, String formatStr)
-//    {
-//        if (null == date || null == formatStr)
-//        {
-//            return "";
-//        }
-//        SimpleDateFormat df = new SimpleDateFormat(formatStr);
-//
-//        return df.format(date);
-//    }
 }

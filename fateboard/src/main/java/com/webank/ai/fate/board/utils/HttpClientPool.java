@@ -36,16 +36,12 @@ import java.util.Map;
 
 @Service
 public class HttpClientPool implements InitializingBean {
+    @Value("${fate.url}")
+    public String fateUrl;
+    Logger logger = LoggerFactory.getLogger(HttpClientPool.class);
     private PoolingHttpClientConnectionManager poolConnManager;
     private RequestConfig requestConfig;
     private CloseableHttpClient httpClient;
-    Logger logger  = LoggerFactory.getLogger(HttpClientPool.class);
-
-
-    @Value("${fate.url}")
-    public  String fateUrl;
-
-
 
     private static void config(HttpRequestBase httpRequestBase) {
         RequestConfig requestConfig = RequestConfig.custom()
@@ -107,9 +103,9 @@ public class HttpClientPool implements InitializingBean {
         StringEntity stringEntity = new StringEntity(requestData, Charsets.UTF_8.toString());
         stringEntity.setContentEncoding("UTF-8");
         httpPost.setEntity(stringEntity);
-        String  result = getResponse(httpPost);
-        logger.info("httpclient sent url {} request {} result: {}",url,requestData,result);
-        return  result;
+        String result = getResponse(httpPost);
+        logger.info("httpclient sent url {} request {} result: {}", url, requestData, result);
+        return result;
     }
 
     public String get(String url) {
@@ -127,7 +123,7 @@ public class HttpClientPool implements InitializingBean {
             String result = EntityUtils.toString(entity, Charsets.UTF_8);
             EntityUtils.consume(entity);
 
-                       return result;
+            return result;
         } catch (IOException e) {
             e.printStackTrace();
             return null;

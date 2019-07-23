@@ -18,20 +18,17 @@ import java.util.Set;
 @Service
 
 public class JobManagerService {
+    public static Set<String> jobFinishStatus = new HashSet<String>() {
+        {
+            add("success");
+            add("failed");
+            add("partial");
+            add("setFailed");
+        }
+    };
     private final Logger logger = LoggerFactory.getLogger(JobManagerService.class);
-
     @Autowired
     JobMapper jobMapper;
-
-
-    public  static Set<String> jobFinishStatus =  new  HashSet<String>(){
-        {
-        add("success");
-        add("failed");
-        add("partial");
-        add("setFailed");
-        }
-        };
 
     public long count() {
 
@@ -61,7 +58,6 @@ public class JobManagerService {
 
         jobExample.setOrderByClause("f_status, f_start_time desc");
 
-
         return jobMapper.selectByExample(jobExample);
 
     }
@@ -80,7 +76,7 @@ public class JobManagerService {
     }
 
 
-    public JobWithBLOBs queryJobByConditions(String jobId,String  role,String partyId) {
+    public JobWithBLOBs queryJobByConditions(String jobId, String role, String partyId) {
 
         JobExample jobExample = new JobExample();
 
@@ -102,16 +98,16 @@ public class JobManagerService {
     }
 
 
-    public List<JobWithBLOBs> queryPagedJobsByCondition(long startIndex, long pageSize, Object orderField, String orderType,String jobId) {
-        String order= orderField+" "+orderType;
-        String limit= startIndex +","+pageSize;
+    public List<JobWithBLOBs> queryPagedJobsByCondition(long startIndex, long pageSize, Object orderField, String orderType, String jobId) {
+        String order = orderField + " " + orderType;
+        String limit = startIndex + "," + pageSize;
 
         JobExample jobExample = new JobExample();
         jobExample.setOrderByClause(order);
         jobExample.setLimitClause(limit);
-        if(jobId!=null){
+        if (jobId != null) {
             JobExample.Criteria criteria = jobExample.createCriteria();
-            jobId= "%"+jobId+"%";
+            jobId = "%" + jobId + "%";
             criteria.andFJobIdLike(jobId);
 
         }
@@ -119,10 +115,6 @@ public class JobManagerService {
 
         return jobWithBLOBs;
     }
-
-
-
-
 
 
 }

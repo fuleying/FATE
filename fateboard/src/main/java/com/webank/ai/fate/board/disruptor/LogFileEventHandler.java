@@ -17,7 +17,7 @@ public class LogFileEventHandler implements EventHandler<LogFileTransferEvent> {
     @Override
     public void onEvent(LogFileTransferEvent event, long sequence, boolean endOfBatch) {
 
-        logger.info("receive transfer event {}",event);
+        logger.info("receive transfer event {}", event);
         File file = new File(event.desFilePath);
         if (file.exists()) {
             return;

@@ -14,9 +14,13 @@ public enum ErrorCode {
     INCOMING_PARAM_ERROR(100006, "ERROR FOR INCOMING PARAMS!");
 
 
-
-
     private int code;
+    private String msg;
+
+    private ErrorCode(int code, String msg) {
+        this.code = code;
+        this.msg = msg;
+    }
 
     public int getCode() {
         return code;
@@ -31,13 +35,6 @@ public enum ErrorCode {
     }
 
     public void setMsg(String msg) {
-        this.msg = msg;
-    }
-
-    private String msg;
-
-    private ErrorCode(int code, String msg) {
-        this.code = code;
         this.msg = msg;
     }
 
