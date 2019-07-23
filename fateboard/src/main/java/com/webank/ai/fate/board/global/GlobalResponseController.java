@@ -39,9 +39,7 @@ public class GlobalResponseController implements ResponseBodyAdvice<Object> {
                                   ServerHttpResponse serverHttpResponse) {
 
 
-
-            return body;
-
+        return body;
 
 
     }

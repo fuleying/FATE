@@ -11,30 +11,12 @@ public class ResponseResult<T> {
 
     @JsonProperty(value = "msg")
     private String msg = "";
-
-    public T getData() {
-        return data;
-    }
-
-    public void setData(T data) {
-        this.data = data;
-    }
-
     @JsonProperty(value = "data")
     private T data;
 
     public ResponseResult(T data) {
         this.data = data;
     }
-
-    public int getCode() {
-        return code;
-    }
-
-    public void setCode(int code) {
-        this.code = code;
-    }
-
 
     public ResponseResult() {
 
@@ -50,15 +32,38 @@ public class ResponseResult<T> {
         this.data = data;
     }
 
-    public ResponseResult(int code,String msg, T data) {
+    public ResponseResult(int code, String msg, T data) {
         this.code = code;
         this.data = data;
-        this.msg=msg;
+        this.msg = msg;
     }
+
 
     public ResponseResult(ErrorCode errorCode) {
         this.code = errorCode.getCode();
         this.msg = errorCode.getMsg();
+    }
+
+    public ResponseResult(ErrorCode errorCode, T data) {
+        this.code = errorCode.getCode();
+        this.msg = errorCode.getMsg();
+        this.data = data;
+    }
+
+    public T getData() {
+        return data;
+    }
+
+    public void setData(T data) {
+        this.data = data;
+    }
+
+    public int getCode() {
+        return code;
+    }
+
+    public void setCode(int code) {
+        this.code = code;
     }
 
     public String getMsg() {
@@ -67,12 +72,6 @@ public class ResponseResult<T> {
 
     public void setMsg(String msg) {
         this.msg = msg;
-    }
-
-    public ResponseResult(ErrorCode errorCode, T data) {
-        this.code = errorCode.getCode();
-        this.msg = errorCode.getMsg();
-        this.data = data;
     }
 
 }

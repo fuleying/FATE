@@ -14,6 +14,11 @@ import java.util.Map;
 public class RandomFileScanner implements Runnable, LogScanner {
 
     private static final Logger logger = LoggerFactory.getLogger(RandomFileScanner.class);
+    long skipLine;
+    TailFile tailFile;
+    long flushNum;
+    Session session;
+    boolean needStop = false;
 
     public RandomFileScanner(File file, Session session, long skipLine) {
 
@@ -26,14 +31,6 @@ public class RandomFileScanner implements Runnable, LogScanner {
         this.session = session;
         this.skipLine = skipLine;
     }
-
-    long skipLine;
-
-    TailFile tailFile;
-
-    long flushNum;
-
-    Session session;
 
     public TailFile getTailFile() {
         return tailFile;
@@ -61,8 +58,6 @@ public class RandomFileScanner implements Runnable, LogScanner {
         this.needStop = needStop;
     }
 
-    boolean needStop = false;
-
     @Override
     public void run() {
         try {
@@ -73,49 +68,31 @@ public class RandomFileScanner implements Runnable, LogScanner {
                         logger.info("roll file thread return");
                         return;
                     }
-                    //List<String> lines = tailFile.readEvents(100);
-                    List<Map> lines  = tailFile.readEventMap(100);
+                    List<Map> lines = tailFile.readEventMap(100);
 
                     if (lines == null) {
                         throw new Exception("lines not exist");
                     }
                     if (lines.size() == 0) {
-//                        if(session.isOpen())
-//                        {
-//                            session.getBasicRemote().flushBatch();
-//                        }
-
                         Thread.sleep(500);
-
-
                     } else {
-                        List<Map>  result = Lists.newArrayList();
+                        List<Map> result = Lists.newArrayList();
                         lines.forEach(content -> {
-
                             flushNum++;
                             if (session.isOpen()) {
 
-                                    if (flushNum > skipLine) {
-
-                                      //  session.getBasicRemote().sendText(content);
-                                        result.add(content);
-
-                                    }
-
+                                if (flushNum > skipLine) {
+                                    result.add(content);
+                                }
                             } else {
                                 needStop = true;
-                                return ;
+                                return;
                             }
 
                         });
-
-                        if(session.isOpen())
-                        {
+                        if (session.isOpen()) {
                             session.getBasicRemote().sendText(JSON.toJSONString(result));
-                           // session.getBasicRemote().flushBatch();
                         }
-
-
                     }
                 } catch (Exception e) {
                     logger.error("roll local file error", e);

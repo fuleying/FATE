@@ -10,10 +10,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class LogFileTransferEventProducer implements InitializingBean {
-    private RingBuffer<LogFileTransferEvent> ringBuffer;
     @Autowired
     LogFileEventHandler logFileEventHandle;
-
+    private RingBuffer<LogFileTransferEvent> ringBuffer;
 
     public void onData(SshInfo sshInfo,
                        String sourceFilePath,
@@ -34,19 +33,10 @@ public class LogFileTransferEventProducer implements InitializingBean {
     public void afterPropertiesSet() throws Exception {
 
         LogFileTransferEventFactory factory = new LogFileTransferEventFactory();
-
-        // Specify the size of the ring buffer, must be power of 2.
         int bufferSize = 1024;
-
-        // Construct the Disruptor
         Disruptor<LogFileTransferEvent> disruptor = new Disruptor<>(factory, bufferSize, DaemonThreadFactory.INSTANCE);
-
-        // Connect the handler
         disruptor.handleEventsWith(logFileEventHandle);
-
-        // Start the Disruptor, starts all threads running
         disruptor.start();
-
         this.ringBuffer = disruptor.getRingBuffer();
     }
 }

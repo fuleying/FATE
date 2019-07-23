@@ -1,14 +1,11 @@
 package com.webank.ai.fate.board.websocket;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.webank.ai.fate.board.conf.Configurator;
 import com.webank.ai.fate.board.controller.JobDetailController;
 import com.webank.ai.fate.board.controller.JobManagerController;
-import com.webank.ai.fate.board.global.ErrorCode;
 import com.webank.ai.fate.board.global.ResponseResult;
 import com.webank.ai.fate.board.pojo.Job;
 import com.webank.ai.fate.board.services.JobManagerService;
@@ -19,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -30,7 +26,10 @@ import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,11 +40,11 @@ import java.util.concurrent.Future;
 @Component
 public class JobWebSocketService implements InitializingBean, ApplicationContextAware {
 
-    static HttpClientPool  httpClientPool;
+    static HttpClientPool httpClientPool;
 
     static JobManagerService jobManagerService;
 
-    static ApplicationContext  applicationContext;
+    static ApplicationContext applicationContext;
 
     static JobDetailController jobDetailController;
 
@@ -60,13 +59,12 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
     private ExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
     /**
-     *
      * call method when building connection
      **/
     @OnOpen
-    public void onOpen(Session session, @PathParam("jobId") String jobId,@PathParam("role") String  role,@PathParam("partyId")  Integer partyId) {
+    public void onOpen(Session session, @PathParam("jobId") String jobId, @PathParam("role") String role, @PathParam("partyId") Integer partyId) {
 
-        String  jobKey =  jobId+":"+role+":"+partyId;
+        String jobKey = jobId + ":" + role + ":" + partyId;
 
         jobSessionMap.put(session, jobKey);
 
@@ -101,7 +99,7 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
      */
     @OnError
     public void onError(Session session, Throwable error) {
-        logger.error("there is a error!",error);
+        logger.error("there is a error!", error);
         error.printStackTrace();
     }
 
@@ -124,37 +122,33 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
             jobMaps.put(jobKey, sessions);
 
         });
-//        if (logger.isDebugEnabled()) {
-//            logger.debug("job maps {}", jobMaps);
-//        }
-        if(jobMaps.size()>0) {
-            logger.info("job websocket job size {}",jobMaps.size());
+        if (jobMaps.size() > 0) {
+            logger.info("job websocket job size {}", jobMaps.size());
         }
         jobMaps.forEach((k, v) -> {
 
 
                     String[] args = k.split(":");
-                    Preconditions.checkArgument(args.length==3);
-                    String jobId =  args[0];
+                    Preconditions.checkArgument(args.length == 3);
+                    String jobId = args[0];
                     String role = args[1];
                     Integer partyId = new Integer(args[2]);
 
 
-                    Job job = jobManagerService.queryJobByConditions(args[0],args[1],args[2]);
+                    Job job = jobManagerService.queryJobByConditions(args[0], args[1], args[2]);
                     if (job != null) {
                         //logger.info("try to query job process {} ", k);
 
                         HashMap<String, Object> flushToWebData = new HashMap<>(16);
                         Integer process = job.getfProgress();
-                        long  now=  System.currentTimeMillis();
-                        long duration =0;
+                        long now = System.currentTimeMillis();
+                        long duration = 0;
                         Long startTime = job.getfStartTime();
-                        Long endTime =job.getfEndTime();
-                        if(endTime!=null)
-                        {
-                            duration= endTime-startTime;
+                        Long endTime = job.getfEndTime();
+                        if (endTime != null) {
+                            duration = endTime - startTime;
 
-                        }else{
+                        } else {
                             duration = now - startTime;
                         }
 
@@ -164,47 +158,31 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
                         flushToWebData.put(Dict.JOB_DURATION, duration);
                         flushToWebData.put(Dict.JOB_STATUS, status);
 
-                        Map  param = Maps.newHashMap();
-                        param.put(Dict.JOBID,jobId);
-                        param.put(Dict.ROLE,role);
-                        param.put(Dict.PARTY_ID,partyId);
+                        Map param = Maps.newHashMap();
+                        param.put(Dict.JOBID, jobId);
+                        param.put(Dict.ROLE, role);
+                        param.put(Dict.PARTY_ID, partyId);
 
-                        Future<?>   dependencyFuture= ThreadPoolTaskExecutorUtil.submitListenable(asyncServiceExecutor,()->{
-                            ResponseResult  responseResult = jobDetailController.getDagDependencies(JSON.toJSONString(param));
-
-
-                            return  responseResult;
-                        },new int[]{500},new int[]{3}) ;
-
-//                        Future<?> dataViewFuture = ThreadPoolTaskExecutorUtil.submitListenable(asyncServiceExecutor,() -> {
-//
-//                            ResponseResult  responseResult = jobManagerController.queryJobDataset(JSON.toJSONString(param));
-//
-//                            return responseResult;
-//                        },new int[]{500},new int[]{3});
+                        Future<?> dependencyFuture = ThreadPoolTaskExecutorUtil.submitListenable(asyncServiceExecutor, () -> {
+                            ResponseResult responseResult = jobDetailController.getDagDependencies(JSON.toJSONString(param));
 
 
-
+                            return responseResult;
+                        }, new int[]{500}, new int[]{3});
 
                         try {
 
                             try {
                                 flushToWebData.put(Dict.DEPENDENCY_DATA, dependencyFuture.get());
-                            }catch(Exception  e){
-                                logger.error("DEPENDENCY_DATA ERROR",e);
+                            } catch (Exception e) {
+                                logger.error("DEPENDENCY_DATA ERROR", e);
                             }
 
+                        } catch (Exception e) {
 
-//                            flushToWebData.put(Dict.DATAVIEW_DATA, dataViewFuture.get());
-
-                        }catch(Exception e){
-
-                            logger.error("job websocket error ",e);
+                            logger.error("job websocket error ", e);
 
                         }
-
-
-
                         v.forEach(session -> {
 
                             if (session.isOpen()) {
@@ -221,9 +199,10 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
                             }
 
                         });
-                    }else{
-                        logger.error("job {} is not exist",k);
-                    };
+                    } else {
+                        logger.error("job {} is not exist", k);
+                    }
+                    ;
 
                 }
         );
@@ -232,16 +211,16 @@ public class JobWebSocketService implements InitializingBean, ApplicationContext
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        jobManagerService =(JobManagerService)applicationContext.getBean("jobManagerService");
-        httpClientPool  =  (HttpClientPool)applicationContext.getBean("httpClientPool");
-        jobDetailController = (JobDetailController)applicationContext.getBean("jobDetailController");
+        jobManagerService = (JobManagerService) applicationContext.getBean("jobManagerService");
+        httpClientPool = (HttpClientPool) applicationContext.getBean("httpClientPool");
+        jobDetailController = (JobDetailController) applicationContext.getBean("jobDetailController");
         asyncServiceExecutor = (ThreadPoolTaskExecutor) applicationContext.getBean("asyncServiceExecutor");
         jobManagerController = (JobManagerController) applicationContext.getBean("jobManagerController");
     }
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        JobWebSocketService.applicationContext =  applicationContext;
+        JobWebSocketService.applicationContext = applicationContext;
 
     }
 }

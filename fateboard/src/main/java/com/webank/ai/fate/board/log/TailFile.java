@@ -38,10 +38,8 @@ public class TailFile {
 
     private static final int BUFFER_SIZE = 8192;
     private static final int NEED_READING = -1;
-
-    private RandomAccessFile raf;
     private final String path;
-
+    private RandomAccessFile raf;
     private long inode;
     // private final long inode;
     private long pos;
@@ -87,33 +85,32 @@ public class TailFile {
         return pos;
     }
 
-    public long getLastUpdated() {
-        return lastUpdated;
-    }
-
-    public boolean needTail() {
-        return needTail;
-    }
-
-
-    public long getLineReadPos() {
-        return lineReadPos;
-    }
-
     public void setPos(long pos) {
         this.pos = pos;
+    }
+
+    public long getLastUpdated() {
+        return lastUpdated;
     }
 
     public void setLastUpdated(long lastUpdated) {
         this.lastUpdated = lastUpdated;
     }
 
-    public void setNeedTail(boolean needTail) {
-        this.needTail = needTail;
+    public boolean needTail() {
+        return needTail;
+    }
+
+    public long getLineReadPos() {
+        return lineReadPos;
     }
 
     public void setLineReadPos(long lineReadPos) {
         this.lineReadPos = lineReadPos;
+    }
+
+    public void setNeedTail(boolean needTail) {
+        this.needTail = needTail;
     }
 
     public boolean updatePos(String path, long inode, long pos) throws IOException {
@@ -266,7 +263,6 @@ public class TailFile {
             this.line = line;
         }
     }
-
 
 
 }

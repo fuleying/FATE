@@ -6,6 +6,24 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 public class LogFileTransferEvent {
 
+    SshInfo sshInfo;
+    String sourceFilePath;
+    String desFilePath;
+    int status = 0;
+
+    public LogFileTransferEvent() {
+
+    }
+
+    public LogFileTransferEvent(
+            SshInfo sshInfo,
+            String sourceFilePath,
+            String desFilePath) {
+        this.sshInfo = sshInfo;
+        this.sourceFilePath = sourceFilePath;
+        this.desFilePath = desFilePath;
+    }
+
     public SshInfo getSshInfo() {
         return sshInfo;
     }
@@ -38,30 +56,9 @@ public class LogFileTransferEvent {
         this.status = status;
     }
 
-    SshInfo sshInfo;
-
-    String sourceFilePath;
-
-    String desFilePath;
-
-    int status = 0;
-
-    public LogFileTransferEvent() {
-
-    }
-
-    public LogFileTransferEvent(
-            SshInfo sshInfo,
-            String sourceFilePath,
-            String desFilePath) {
-        this.sshInfo = sshInfo;
-        this.sourceFilePath = sourceFilePath;
-        this.desFilePath = desFilePath;
-    }
-
     @Override
-    public String toString(){
+    public String toString() {
         String str = ToStringBuilder.reflectionToString(this, ToStringStyle.DEFAULT_STYLE);
-        return  str;
+        return str;
     }
 }

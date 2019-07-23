@@ -13,7 +13,7 @@ import java.util.List;
 public class GetSystemInfo {
 
 
-   static  Logger logger  = LoggerFactory.getLogger(GetSystemInfo.class);
+    static Logger logger = LoggerFactory.getLogger(GetSystemInfo.class);
 
 
     public static String getLocalIp() {
@@ -39,7 +39,7 @@ public class GetSystemInfo {
         return "";
     }
 
-    private  static String getIpByEthNum(String ethNum) {
+    private static String getIpByEthNum(String ethNum) {
         try {
             Enumeration allNetInterfaces = NetworkInterface.getNetworkInterfaces();
             InetAddress ip;
@@ -62,57 +62,57 @@ public class GetSystemInfo {
     }
 
 
-    public static String getOsName(){  
+    public static String getOsName() {
 
-        String osName = System.getProperty("os.name");  
-        return osName;  
-    }  
-  
-
-    public static double getSystemCpuLoad(){  
-        OperatingSystemMXBean osmxb = (OperatingSystemMXBean) ManagementFactory  
-                .getOperatingSystemMXBean();  
-        double SystemCpuLoad = osmxb.getSystemCpuLoad();  
-        return SystemCpuLoad;  
-    }  
-  
-
-    public static double getProcessCpuLoad(){  
-        OperatingSystemMXBean osmxb = (OperatingSystemMXBean) ManagementFactory  
-                .getOperatingSystemMXBean();  
-        double ProcessCpuLoad = osmxb.getProcessCpuLoad();  
-        return ProcessCpuLoad;  
-    }  
-  
-
-    public static long getTotalMemorySize(){  
-        int kb = 1024;  
-        OperatingSystemMXBean osmxb = (OperatingSystemMXBean) ManagementFactory  
-                .getOperatingSystemMXBean();
-        long totalMemorySize = osmxb.getTotalPhysicalMemorySize() / kb;  
-        return totalMemorySize;  
-    }  
-  
-
-    public static long getFreePhysicalMemorySize(){  
-        int kb = 1024;  
-        OperatingSystemMXBean osmxb = (OperatingSystemMXBean) ManagementFactory  
-                .getOperatingSystemMXBean();
-        long freePhysicalMemorySize = osmxb.getFreePhysicalMemorySize() / kb;  
-        return freePhysicalMemorySize;  
-    }  
-  
-
-    public static long getUsedMemory(){  
-        int kb = 1024;  
-        OperatingSystemMXBean osmxb = (OperatingSystemMXBean) ManagementFactory  
-                .getOperatingSystemMXBean();
-        long usedMemory = (osmxb.getTotalPhysicalMemorySize() - osmxb.getFreePhysicalMemorySize()) / kb;  
-        return usedMemory;  
+        String osName = System.getProperty("os.name");
+        return osName;
     }
 
 
-    public  static   void   test(){
+    public static double getSystemCpuLoad() {
+        OperatingSystemMXBean osmxb = (OperatingSystemMXBean) ManagementFactory
+                .getOperatingSystemMXBean();
+        double SystemCpuLoad = osmxb.getSystemCpuLoad();
+        return SystemCpuLoad;
+    }
+
+
+    public static double getProcessCpuLoad() {
+        OperatingSystemMXBean osmxb = (OperatingSystemMXBean) ManagementFactory
+                .getOperatingSystemMXBean();
+        double ProcessCpuLoad = osmxb.getProcessCpuLoad();
+        return ProcessCpuLoad;
+    }
+
+
+    public static long getTotalMemorySize() {
+        int kb = 1024;
+        OperatingSystemMXBean osmxb = (OperatingSystemMXBean) ManagementFactory
+                .getOperatingSystemMXBean();
+        long totalMemorySize = osmxb.getTotalPhysicalMemorySize() / kb;
+        return totalMemorySize;
+    }
+
+
+    public static long getFreePhysicalMemorySize() {
+        int kb = 1024;
+        OperatingSystemMXBean osmxb = (OperatingSystemMXBean) ManagementFactory
+                .getOperatingSystemMXBean();
+        long freePhysicalMemorySize = osmxb.getFreePhysicalMemorySize() / kb;
+        return freePhysicalMemorySize;
+    }
+
+
+    public static long getUsedMemory() {
+        int kb = 1024;
+        OperatingSystemMXBean osmxb = (OperatingSystemMXBean) ManagementFactory
+                .getOperatingSystemMXBean();
+        long usedMemory = (osmxb.getTotalPhysicalMemorySize() - osmxb.getFreePhysicalMemorySize()) / kb;
+        return usedMemory;
+    }
+
+
+    public static void test() {
 
 
         List<MemoryPoolMXBean> memoryPoolMXBeans = ManagementFactory.getMemoryPoolMXBeans();
@@ -125,18 +125,18 @@ public class GetSystemInfo {
     }
 
 
-    public  static  void  main(String[]  args){
+    public static void main(String[] args) {
 
-       System.err.println( getUsedMemory());
+        System.err.println(getUsedMemory());
 
-       System.err.println(getFreePhysicalMemorySize());
+        System.err.println(getFreePhysicalMemorySize());
 
-       System.err.println(getProcessCpuLoad());
+        System.err.println(getProcessCpuLoad());
 
-       System.err.println(getSystemCpuLoad());
+        System.err.println(getSystemCpuLoad());
 
-     //  System.err.println(getLocalIp());
-       test();
+        //  System.err.println(getLocalIp());
+        test();
 
     }
 }  

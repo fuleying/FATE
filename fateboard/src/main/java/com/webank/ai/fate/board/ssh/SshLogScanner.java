@@ -43,19 +43,19 @@ public class SshLogScanner implements Runnable, LogScanner {
 
     SshInfo sshInfo;
 
-    Integer  beginLine;
+    Integer beginLine;
 
-    Integer  batchSize=100;
+    Integer batchSize = 100;
 
     public SshLogScanner(javax.websocket.Session webSocketSession,
                          LogFileService logFileService,
                          SshInfo sshInfo,
-                         String jobId, String componentId, String type,String  role,String partyId,Integer  beginLine) {
+                         String jobId, String componentId, String type, String role, String partyId, Integer beginLine) {
         Preconditions.checkArgument(jobId != null && !jobId.equals(""));
         this.jobId = jobId;
         Preconditions.checkArgument(componentId != null && !componentId.equals(""));
         this.componentId = componentId;
-        this.filePath = logFileService.buildFilePath(jobId, componentId, type,role,partyId);
+        this.filePath = logFileService.buildFilePath(jobId, componentId, type, role, partyId);
         this.sshInfo = sshInfo;
         Preconditions.checkArgument(type != null && !type.equals(""));
         this.type = type;
@@ -67,7 +67,6 @@ public class SshLogScanner implements Runnable, LogScanner {
 
 
     public void pullLog() throws IOException {
-        logger.info("prepare to pull remote log file   ");
         BufferedReader reader = null;
         Channel wcChannel = null;
         Channel tailChannel = null;
@@ -87,15 +86,16 @@ public class SshLogScanner implements Runnable, LogScanner {
                     reader = new BufferedReader(new InputStreamReader(inputStream));
                     String content = reader.readLine();
                     List<Map> result = Lists.newArrayList();
-                    int  batchCount = 0;
+                    int batchCount = 0;
                     while ((content = reader.readLine()) != null && !needStop) {
                         readLine++;
-                        logger.info("remote file readline {}",readLine);
-
+                        if(logger.isDebugEnabled()) {
+                            logger.info("remote file readline {}", readLine);
+                        }
                         Map jsonContent = LogFileService.toLogMap(content, readLine);
                         result.add(jsonContent);
-                        if(result.size()>=batchSize){
-                            if(webSocketSession.isOpen()) {
+                        if (result.size() >= batchSize) {
+                            if (webSocketSession.isOpen()) {
                                 webSocketSession.getBasicRemote().sendText(JSON.toJSONString(result));
                             }
                             result.clear();
@@ -104,7 +104,7 @@ public class SshLogScanner implements Runnable, LogScanner {
 
                     }
                     if (webSocketSession.isOpen()) {
-                        if(result.size()!=0) {
+                        if (result.size() != 0) {
                             webSocketSession.getBasicRemote().sendText(JSON.toJSONString(result));
                         }
                     }
@@ -125,8 +125,8 @@ public class SshLogScanner implements Runnable, LogScanner {
                 beginLine = readLine;
             }
         } catch (Throwable e) {
-            e.printStackTrace();
-            logger.error("close web socket session");
+
+            logger.error("close web socket session",e);
             webSocketSession.close();
         } finally {
             if (wcChannel != null) {
