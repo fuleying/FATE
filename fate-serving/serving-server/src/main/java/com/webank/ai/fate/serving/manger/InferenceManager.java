@@ -17,6 +17,7 @@
 package com.webank.ai.fate.serving.manger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Maps;
 import com.webank.ai.fate.core.bean.FederatedParty;
 import com.webank.ai.fate.core.bean.FederatedRoles;
 import com.webank.ai.fate.core.bean.ReturnResult;
@@ -179,8 +180,13 @@ public class InferenceManager {
         long endTime = System.currentTimeMillis();
         long inferenceElapsed = endTime - startTime;
         logInference(inferenceRequest, modelNamespaceData, inferenceResult, inferenceElapsed, getRemotePartyResult, billing);
+        if(inferenceResult.getRetcode() != 0){
+            Map<String,Object>  warnMap = Maps.newHashMap();
+            warnMap.put("preCode",inferenceResult.getRetcode());
+            inferenceResult.setWarn(warnMap);
+            inferenceResult.setRetcode(0);
+        }
 
-        inferenceResult.setRetcode(0);
         if (inferenceResult.getRetcode() == 0) {
             CacheManager.putInferenceResultCache(inferenceRequest.getAppid(), inferenceRequest.getCaseid(), inferenceResult);
             LOGGER.info("case {} inference successfully use {} ms.", inferenceRequest.getCaseid(), inferenceElapsed);
