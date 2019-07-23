@@ -179,12 +179,16 @@ public class InferenceManager {
         long endTime = System.currentTimeMillis();
         long inferenceElapsed = endTime - startTime;
         logInference(inferenceRequest, modelNamespaceData, inferenceResult, inferenceElapsed, getRemotePartyResult, billing);
+
+        inferenceResult.setRetcode(0);
         if (inferenceResult.getRetcode() == 0) {
             CacheManager.putInferenceResultCache(inferenceRequest.getAppid(), inferenceRequest.getCaseid(), inferenceResult);
             LOGGER.info("case {} inference successfully use {} ms.", inferenceRequest.getCaseid(), inferenceElapsed);
         } else {
             LOGGER.info("case {} failed inference, retcode is {}, use {} ms.", inferenceRequest.getCaseid(), inferenceResult.getRetcode(), inferenceElapsed);
         }
+
+
         LOGGER.info("ppppppppppppppppppppppppppppppppppppppppp {}", inferenceResult.getData());
 
 
