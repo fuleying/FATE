@@ -195,7 +195,6 @@ public class InferenceManager {
         }
 
 
-        LOGGER.info("ppppppppppppppppppppppppppppppppppppppppp {}", inferenceResult.getData());
 
 
         return inferenceResult;
