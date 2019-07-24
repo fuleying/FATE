@@ -38,8 +38,17 @@ RUN tar -xf fate.tar
 
 RUN rm fate.tar
 
+RUN apt-get update && apt-get -y install wget && apt-get -y install libc6 libgmp10 multiarch-support
+RUN wget http://ftp.cn.debian.org/debian/pool/main/m/mpfr4/libmpfr4_3.1.2-2_amd64.deb
+RUN wget http://ftp.cn.debian.org/debian/pool/main/m/mpfr4/libmpfr4-dbg_3.1.2-2_amd64.deb
+RUN dpkg -i libmpfr4_3.1.2-2_amd64.deb
+RUN dpkg -i libmpfr4-dbg_3.1.2-2_amd64.deb
+
 RUN apt-get update && apt-get install libgmp3-dev -y && apt-get install -y libmpfr-dev libmpfr-doc libmpfr4 libmpfr4-dbg && apt-get install libmpc-dev -y
 
 RUN pip install -r requirements.txt
+
+RUN rm libmpfr4_3.1.2-2_amd64.deb
+RUN rm libmpfr4-dbg_3.1.2-2_amd64.deb
 
 ENV PYTHONPATH /fate

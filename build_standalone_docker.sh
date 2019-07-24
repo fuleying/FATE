@@ -22,7 +22,7 @@ cp requirements.txt ./docker/standalone/
 
 git archive -o ./docker/standalone/fate.tar $(git rev-parse HEAD) arch federatedml workflow examples
 
-docker build --no-cache -t fate/standalone docker/standalone
+docker build -t fuleying/standalone:v1 docker/standalone
 
 rm docker/standalone/fate.tar
 rm docker/standalone/requirements.txt
