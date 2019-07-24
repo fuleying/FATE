@@ -30,13 +30,6 @@ FROM python:3.6
 
 WORKDIR /fate
 
-COPY . /fate
-
-RUN rm /bin/sh && ln -sf /bin/bash /bin/sh
-
-RUN tar -xf fate.tar
-
-RUN rm fate.tar
 
 RUN apt-get update && apt-get -y install wget && apt-get -y install libc6 libgmp10 multiarch-support
 RUN wget http://ftp.cn.debian.org/debian/pool/main/m/mpfr4/libmpfr4_3.1.2-2_amd64.deb
@@ -46,9 +39,21 @@ RUN dpkg -i libmpfr4-dbg_3.1.2-2_amd64.deb
 
 RUN apt-get update && apt-get install libgmp3-dev -y && apt-get install -y libmpfr-dev libmpfr-doc libmpfr4 libmpfr4-dbg && apt-get install libmpc-dev -y
 
+RUN rm /bin/sh && ln -sf /bin/bash /bin/sh
+
+COPY requirements.txt /fate
 RUN pip install -r requirements.txt
 
+COPY fate.tar /fate
+RUN tar -xf fate.tar
+
+
+RUN rm fate.tar
 RUN rm libmpfr4_3.1.2-2_amd64.deb
 RUN rm libmpfr4-dbg_3.1.2-2_amd64.deb
 
 ENV PYTHONPATH /fate
+
+VOLUME /fate_src/
+
+WORKDIR /fate_src/

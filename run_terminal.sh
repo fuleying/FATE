@@ -2,5 +2,6 @@
 
 
 docker run --rm -it -h docker \
-    fuleying/standalone:v1 \
+    -v /oocl/Github/FATE/:/fate_src/ \
+    fuleying/standalone:v2 \
     /bin/bash -c "which python && bash"
